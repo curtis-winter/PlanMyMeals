@@ -1,0 +1,5 @@
+{
+  "name": "MyMealPlan",
+  "description": "Plan your weekly meals, manage ingredients, and generate a shopping list automatically.",
+  "requestFramePermissions": []
+}
