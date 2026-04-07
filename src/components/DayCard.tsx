@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, ChevronRight, Plus, Trash2, BookPlus, Utensils, History, Import, GripVertical } from 'lucide-react';
-import { DayOfWeek, RecipeInstance, Ingredient, PantryItem, Recipe } from '../types';
+import { ChevronDown, ChevronRight, Plus, Trash2, BookPlus, Utensils, History, Import, GripVertical, CheckCircle2, Circle } from 'lucide-react';
+import { DayOfWeek, RecipeInstance, Ingredient, PantryItem, Recipe, Task } from '../types';
 import { RecipeInstanceCard } from './RecipeInstanceCard';
 
 interface DayCardProps {
@@ -29,10 +29,11 @@ interface DayCardProps {
   pantryItems: PantryItem[];
   onOpenRecipeBook: (day: DayOfWeek) => void;
   onCook: (recipe: Recipe) => void;
-  instructions?: string[];
+  instructions?: Task[];
   addInstruction: (day: DayOfWeek) => void;
   updateInstruction: (day: DayOfWeek, index: number, value: string) => void;
   removeInstruction: (day: DayOfWeek, index: number) => void;
+  toggleTaskComplete: (day: DayOfWeek, index: number) => void;
   onImportRecipe: (day: DayOfWeek) => void;
 }
 
@@ -161,11 +162,13 @@ export const DayCard: React.FC<DayCardProps> = ({
   addInstruction,
   updateInstruction,
   removeInstruction,
+  toggleTaskComplete,
   onImportRecipe
 }) => {
   const [isEnteringRestaurant, setIsEnteringRestaurant] = React.useState(false);
-  const [restaurantName, setRestaurantName] = React.useState('');
+  const [restaurantName, setRestaurantName] = useState('');
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
+  const [focusedTaskIndex, setFocusedTaskIndex] = React.useState<number | null>(null);
   
   const pantryNames = React.useMemo(() => 
     new Set(pantryItems.map(item => item.name.toLowerCase().trim())),
@@ -236,26 +239,47 @@ export const DayCard: React.FC<DayCardProps> = ({
           >
             <div className="px-6 pb-6 pt-2 border-t border-border-theme">
               <div className="space-y-6">
-                {/* Instructions Section */}
+                {/* Tasks Section */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-bold text-neutral-theme uppercase tracking-widest">Day Instructions</h4>
-                    <button
-                      onClick={() => addInstruction(day)}
-                      className="text-primary text-[10px] font-bold flex items-center gap-1 hover:text-secondary transition-colors"
-                    >
-                      <Plus className="w-3 h-3" /> Add Note
-                    </button>
+                    <h4 className="text-[10px] font-bold text-neutral-theme uppercase tracking-widest">Tasks</h4>
                   </div>
                   <div className="space-y-2">
-                    {instructions.map((note, idx) => (
-                      <div key={idx} className="flex items-center gap-2 group">
+                    {instructions.map((task, idx) => (
+                      <div key={task.id} className="flex items-center gap-2 group">
+                        <button
+                          onClick={() => toggleTaskComplete(day, idx)}
+                          className="flex-shrink-0"
+                        >
+                          {task.completed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-primary/30 hover:text-primary" />
+                          )}
+                        </button>
                         <input
                           type="text"
-                          value={note}
+                          value={task.text}
                           onChange={(e) => updateInstruction(day, idx, e.target.value)}
-                          placeholder="e.g., Thaw shrimp for tomorrow..."
-                          className="flex-1 bg-background-theme/50 border-none focus:ring-1 focus:ring-primary/20 px-3 py-2 rounded-xl text-sm text-primary placeholder:text-neutral-theme/30"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                              addInstruction(day);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (!e.target.value.trim()) {
+                              removeInstruction(day, idx);
+                            }
+                          }}
+                          ref={(el) => {
+                            if (el && idx === instructions.length - 1 && task.text === '') {
+                              el.focus();
+                            }
+                          }}
+                          placeholder="e.g., Thaw shrimp, buy groceries..."
+                          className={`flex-1 bg-background-theme/50 border-none focus:ring-1 focus:ring-primary/20 px-3 py-2 rounded-xl text-sm placeholder:text-neutral-theme/30 ${
+                            task.completed ? 'line-through text-neutral-theme/50' : 'text-primary'
+                          }`}
                         />
                         <button
                           onClick={() => removeInstruction(day, idx)}
@@ -265,6 +289,14 @@ export const DayCard: React.FC<DayCardProps> = ({
                         </button>
                       </div>
                     ))}
+                    {instructions.length === 0 && (
+                      <button
+                        onClick={() => addInstruction(day)}
+                        className="text-primary text-sm font-medium flex items-center gap-2 hover:text-secondary transition-colors"
+                      >
+                        <Plus className="w-4 h-4" /> Add Task
+                      </button>
+                    )}
                   </div>
                 </div>
 

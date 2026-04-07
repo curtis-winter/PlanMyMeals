@@ -92,6 +92,7 @@ export default function App() {
     addInstruction,
     updateInstruction,
     removeInstruction,
+    toggleTaskComplete,
     applyRecipeToDay,
     navigateWeek,
     setPlan,
@@ -410,6 +411,7 @@ export default function App() {
               addInstruction={addInstruction}
               updateInstruction={updateInstruction}
               removeInstruction={removeInstruction}
+              toggleTaskComplete={toggleTaskComplete}
               pantryItems={pantryItems}
               onOpenRecipeBook={(day) => {
                 setExpandedDay(day);

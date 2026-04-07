@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { WeeklyPlan, DayOfWeek, Meal, RecipeInstance, Ingredient, DAYS_OF_WEEK, getWeekStart, Recipe, PantryItem } from '../types';
+import { WeeklyPlan, DayOfWeek, Meal, RecipeInstance, Ingredient, DAYS_OF_WEEK, getWeekStart, Recipe, PantryItem, Task } from '../types';
 import { generateId } from '../utils/id';
 
 const INITIAL_PLAN: WeeklyPlan = DAYS_OF_WEEK.reduce((acc, day) => {
@@ -28,9 +28,17 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
         const data = await res.json();
         const newPlan = { ...INITIAL_PLAN };
         data.forEach((row: any) => {
+          // Handle migration from old string[] to new Task[]
+          const rawInstructions = JSON.parse(row.instructions || '[]');
+          const instructions = rawInstructions.map((item: any) => {
+            if (typeof item === 'string') {
+              return { id: generateId(), text: item, completed: false };
+            }
+            return item;
+          });
           newPlan[row.day] = {
             recipes: JSON.parse(row.recipes || '[]'),
-            instructions: JSON.parse(row.instructions || '[]')
+            instructions
           };
         });
         setPlan(newPlan);
@@ -198,7 +206,8 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
   }, [plan, pantryNames]);
 
   const addInstruction = (day: DayOfWeek) => {
-    const newInstructions = [...(plan[day].instructions || []), ''];
+    const newTask: Task = { id: generateId(), text: '', completed: false };
+    const newInstructions = [...(plan[day].instructions || []), newTask];
     const newMeal = { ...plan[day], instructions: newInstructions };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
     saveDayPlan(day, newMeal);
@@ -206,7 +215,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
 
   const updateInstruction = (day: DayOfWeek, index: number, value: string) => {
     const newInstructions = [...(plan[day].instructions || [])];
-    newInstructions[index] = value;
+    newInstructions[index] = { ...newInstructions[index], text: value };
     const newMeal = { ...plan[day], instructions: newInstructions };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
     saveDayPlan(day, newMeal);
@@ -214,6 +223,14 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
 
   const removeInstruction = (day: DayOfWeek, index: number) => {
     const newInstructions = (plan[day].instructions || []).filter((_, i) => i !== index);
+    const newMeal = { ...plan[day], instructions: newInstructions };
+    setPlan(prev => ({ ...prev, [day]: newMeal }));
+    saveDayPlan(day, newMeal);
+  };
+
+  const toggleTaskComplete = (day: DayOfWeek, index: number) => {
+    const newInstructions = [...(plan[day].instructions || [])];
+    newInstructions[index] = { ...newInstructions[index], completed: !newInstructions[index].completed };
     const newMeal = { ...plan[day], instructions: newInstructions };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
     saveDayPlan(day, newMeal);
@@ -275,6 +292,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     addInstruction,
     updateInstruction,
     removeInstruction,
+    toggleTaskComplete,
     applyRecipeToDay,
     navigateWeek,
     setPlan,

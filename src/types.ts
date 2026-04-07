@@ -26,7 +26,13 @@ export interface RecipeInstance {
 
 export interface Meal {
   recipes: RecipeInstance[];
-  instructions?: string[];
+  instructions?: Task[];
+}
+
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
 }
 
 export interface Recipe {
