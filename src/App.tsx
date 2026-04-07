@@ -19,8 +19,6 @@ import {
  } from 'lucide-react';
 import { motion } from 'motion/react';
 import { DAYS_OF_WEEK, DayOfWeek, Ingredient, getWeekStart, Recipe } from './types';
-import { generateId } from './utils/id';
-import { DndContext } from '@dnd-kit/core';
 
 // Hooks
 import { usePantry } from './hooks/usePantry';
@@ -465,6 +463,10 @@ export default function App() {
         onClose={() => setShowShoppingList(false)} 
         shoppingList={shoppingList} 
         onMarkAsAvailable={(name) => savePantryItem({ name })}
+        onAddItem={(name) => {
+          const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
+          savePantryItem({ name: capitalized });
+        }}
       />
 
       <RecipeBookModal
