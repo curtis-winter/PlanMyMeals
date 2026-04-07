@@ -28,6 +28,7 @@ import { useMealPlan } from './hooks/useMealPlan';
 import { useRecipes } from './hooks/useRecipes';
 import { useSettings } from './hooks/useSettings';
 import { useAI } from './hooks/useAI';
+import { useBuildInfo } from './hooks/useBuildInfo';
 
 // Components
 import { ShoppingListModal } from './components/ShoppingListModal';
@@ -137,6 +138,9 @@ export default function App() {
     importRecipe,
     cleanupRecipe
   } = useAI(plan, setPlan, saveDayPlan, pantryItems);
+
+  const { buildNumber } = useBuildInfo();
+  const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
   const today = new Date();
   const todayName = DAYS_OF_WEEK[(today.getDay() + 6) % 7];
@@ -249,44 +253,49 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background-theme text-text-theme font-sans pb-20 transition-colors">
       {/* Header */}
-      <header className="bg-surface border-b border-border-theme sticky top-0 z-30 transition-colors">
+      <header className={`border-b sticky top-0 z-30 transition-colors ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setShowSettings(true)}
-              className="p-2 text-neutral-theme hover:text-primary transition-colors"
+              className={`p-2 transition-colors ${isLocalHost ? 'text-white hover:text-red-200' : 'text-neutral-theme hover:text-primary'}`}
               title="Settings"
             >
               <Settings className="w-6 h-6" />
             </button>
-            <div className="bg-primary p-2 rounded-lg">
-              <UtensilsCrossed className="text-background-theme w-5 h-5" />
+            <div className={`p-2 rounded-lg ${isLocalHost ? 'bg-white' : 'bg-primary'}`}>
+              <UtensilsCrossed className={`w-5 h-5 ${isLocalHost ? 'text-red-600' : 'text-background-theme'}`} />
             </div>
-            <h1 className="font-bold text-xl tracking-tight text-primary">MyMealPlan</h1>
+            <h1 className={`font-bold text-xl tracking-tight ${isLocalHost ? 'text-white' : 'text-primary'}`}>MyMealPlan</h1>
           </div>
           <div className="flex items-center gap-2">
+            {isLocalHost && buildNumber > 0 && (
+              <span className="bg-white text-red-600 px-3 py-1 rounded-full text-sm font-bold">
+                Build #{buildNumber}
+              </span>
+            )}
             <button 
               onClick={() => setShowRecipeBook(true)}
-              className="flex items-center gap-2 bg-surface border border-border-theme text-primary px-4 py-2 rounded-full text-sm font-medium hover:bg-background-theme transition-colors shadow-sm"
+              className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white/20 border-white/40 text-white hover:bg-white/30' : 'bg-surface border-border-theme text-primary hover:bg-background-theme'}`}
             >
               <BookOpen className="w-4 h-4" />
               <span className="hidden sm:inline">Recipe Book</span>
             </button>
             <button 
               onClick={() => setShowPantryManager(true)}
-              className="flex items-center gap-2 bg-surface border border-border-theme text-primary px-4 py-2 rounded-full text-sm font-medium hover:bg-background-theme transition-colors shadow-sm"
+              className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white/20 border-white/40 text-white hover:bg-white/30' : 'bg-surface border-border-theme text-primary hover:bg-background-theme'}`}
             >
               <Package className="w-4 h-4" />
               <span className="hidden sm:inline">Pantry</span>
             </button>
             <button 
               onClick={() => setShowShoppingList(true)}
-              className="flex items-center gap-2 bg-primary text-background-theme px-4 py-2 rounded-full text-sm font-medium hover:bg-secondary hover:text-primary transition-colors shadow-sm"
+              className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white text-red-600 hover:bg-red-100' : 'bg-primary text-background-theme hover:bg-secondary hover:text-primary'}`}
             >
               <ShoppingCart className="w-4 h-4" />
               <span className="hidden sm:inline">Shopping List</span>
               {shoppingList.length > 0 && (
-                <span className="bg-accent-theme text-black text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                <span className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold ${isLocalHost ? 'bg-red-800 text-white' : 'bg-accent-theme text-black'}`}>
                   {shoppingList.length}
                 </span>
               )}

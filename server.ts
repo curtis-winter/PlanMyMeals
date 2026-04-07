@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 import Database from "better-sqlite3";
 import cors from "cors";
 import axios from "axios";
@@ -87,6 +88,21 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Build number API
+  app.get("/api/build-number", (req, res) => {
+    try {
+      const buildNumberPath = path.join(__dirname, "build-number.json");
+      if (fs.existsSync(buildNumberPath)) {
+        const data = JSON.parse(fs.readFileSync(buildNumberPath, "utf-8"));
+        res.json(data);
+      } else {
+        res.json({ buildNumber: 0 });
+      }
+    } catch (err) {
+      res.json({ buildNumber: 0 });
+    }
+  });
+
   // Settings API
   app.get("/api/settings", (req, res) => {
     const rows = db.prepare("SELECT * FROM settings").all();
@@ -160,15 +176,35 @@ async function startServer() {
   });
 
   app.post("/api/recipes", (req, res) => {
-    const { name, ingredients, directions, rating, tags } = req.body;
+    const { id, name, ingredients, directions, rating, tags } = req.body;
+    
+    // Check by ID first if provided
+    if (id) {
+      const existing = db.prepare("SELECT id FROM recipes WHERE id = ?").get(id) as any;
+      if (existing) {
+        db.prepare(`
+          UPDATE recipes SET name = ?, ingredients = ?, directions = ?, rating = ?, tags = ?
+          WHERE id = ?
+        `).run(name, JSON.stringify(ingredients), JSON.stringify(directions || []), rating || 0, JSON.stringify(tags || []), id);
+        res.json({ success: true });
+        return;
+      }
+    }
+    
+    // Check by name
+    const existing = db.prepare("SELECT id FROM recipes WHERE LOWER(name) = LOWER(?)").get(name) as any;
+    if (existing) {
+      db.prepare(`
+        UPDATE recipes SET name = ?, ingredients = ?, directions = ?, rating = ?, tags = ?
+        WHERE id = ?
+      `).run(name, JSON.stringify(ingredients), JSON.stringify(directions || []), rating || 0, JSON.stringify(tags || []), existing.id);
+      res.json({ success: true });
+      return;
+    }
+    
     const stmt = db.prepare(`
       INSERT INTO recipes (name, ingredients, directions, rating, tags)
       VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(name) DO UPDATE SET
-        ingredients = excluded.ingredients,
-        directions = excluded.directions,
-        rating = excluded.rating,
-        tags = excluded.tags
     `);
     stmt.run(name, JSON.stringify(ingredients), JSON.stringify(directions || []), rating || 0, JSON.stringify(tags || []));
     res.json({ success: true });

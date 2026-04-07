@@ -2,14 +2,11 @@ services:
   app:
     build: .
     network_mode: host
-    ports:
-      - "3112:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+      - OLLAMA_URL=http://host.docker.internal:11434
     volumes:
-      - .:/app
-      - /app/node_modules
-      - meals_data:/app/data
+      - ./build-number.json:/app/build-number.json:ro
 
 volumes:
   meals_data:
