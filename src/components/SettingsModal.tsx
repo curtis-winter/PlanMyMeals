@@ -29,6 +29,8 @@ interface SettingsModalProps {
   setCleanupPrompt: (prompt: string) => void;
   timeoutCleanup: number;
   setTimeoutCleanup: (timeout: number) => void;
+  timeoutPantry: number;
+  setTimeoutPantry: (timeout: number) => void;
   weekStartDay: string;
   setWeekStartDay: (day: string) => void;
 }
@@ -60,6 +62,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setCleanupPrompt,
   timeoutCleanup,
   setTimeoutCleanup,
+  timeoutPantry,
+  setTimeoutPantry,
   weekStartDay,
   setWeekStartDay
 }) => {
@@ -229,6 +233,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="number"
                 value={timeoutCleanup}
                 onChange={(e) => setTimeoutCleanup(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-3 rounded-xl bg-background-theme border-transparent focus:bg-surface focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm text-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-neutral-theme uppercase tracking-wider mb-2">
+                Pantry Optimize Timeout (ms)
+              </label>
+              <input
+                type="number"
+                value={timeoutPantry}
+                onChange={(e) => setTimeoutPantry(parseInt(e.target.value) || 0)}
                 className="w-full px-4 py-3 rounded-xl bg-background-theme border-transparent focus:bg-surface focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm text-primary"
               />
             </div>

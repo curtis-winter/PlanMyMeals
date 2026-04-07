@@ -10,7 +10,9 @@ import axios from "axios";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new Database("meals.db");
+const dataDir = "/app/data";
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+const db = new Database(path.join(dataDir, "meals.db"));
 
 // Initialize DB
 db.exec(`
@@ -67,19 +69,53 @@ db.exec(`
     name TEXT NOT NULL UNIQUE,
     category TEXT
   );
-
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_url', 'http://localhost:11434');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_model', 'llama3');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('import_prompt', 'Extract the recipe from the following text or URL content. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_prompt', 'Suggest a simple and delicious recipe based on these ingredients I have: {{content}}. \n\nDietary Preferences: {{dietaryOptions}}\nAdditional Instructions: {{additionalInstructions}}\n\nGuidelines:\n- Focus on simple recipes.\n- You do not need to use all provided ingredients.\n- Prioritize using the provided ingredients, but you can include common staples or other ingredients not listed if needed.\n\nOutput ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_options', 'FODMAP, Low Calorie, Vegetarian, Vegan, Gluten Free');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_suggest', '60000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_import', '45000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_ingredients', '30000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_cleanup', '45000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('cleanup_prompt', 'Review and improve the following recipe. Fix any typos, improve the clarity of the directions, and ensure the ingredient amounts are consistent. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('week_start_day', 'Monday');
 `);
+
+  // Migration: Update legacy "General" categories to proper sections
+  const categorizeItem = (name: string): string => {
+    const lowerName = name.toLowerCase();
+    const sections: Record<string, string[]> = {
+      'Produce': ['apple', 'banana', 'orange', 'lettuce', 'spinach', 'carrot', 'onion', 'garlic', 'potato', 'tomato', 'cucumber', 'pepper', 'broccoli', 'cabbage', 'herb', 'cilantro', 'parsley', 'basil', 'ginger', 'lemon', 'lime', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'avocado', 'mushroom'],
+      'Meat & Seafood': ['chicken', 'beef', 'pork', 'steak', 'ground', 'turkey', 'fish', 'salmon', 'shrimp', 'tuna', 'bacon', 'sausage', 'ham', 'lamb'],
+      'Dairy & Eggs': ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'cream', 'sour cream', 'cottage cheese', 'parmesan', 'cheddar', 'mozzarella'],
+      'Bakery': ['bread', 'bun', 'tortilla', 'bagel', 'muffin', 'pastry', 'pita'],
+      'Pantry & Grains': ['rice', 'pasta', 'flour', 'sugar', 'oil', 'vinegar', 'honey', 'syrup', 'cereal', 'oat', 'bean', 'lentil', 'nut', 'seed', 'cracker', 'chip', 'snack', 'quinoa', 'couscous'],
+      'Canned & Jarred': ['canned', 'soup', 'sauce', 'salsa', 'pickle', 'olive', 'peanut butter', 'jam', 'jelly', 'broth', 'stock'],
+      'Frozen': ['frozen', 'ice cream', 'pizza'],
+      'Beverages': ['water', 'juice', 'soda', 'coffee', 'tea', 'beer', 'wine'],
+      'Spices & Baking': ['salt', 'pepper', 'spice', 'cinnamon', 'vanilla', 'baking powder', 'baking soda', 'yeast', 'cocoa']
+    };
+    for (const [section, keywords] of Object.entries(sections)) {
+      if (keywords.some(keyword => lowerName.includes(keyword))) {
+        return section;
+      }
+    }
+    return 'Other';
+  };
+  
+  // Migrate pantry items with "General" or null category
+  const pantryItems = db.prepare("SELECT id, name, category FROM pantry").all() as any[];
+  for (const item of pantryItems) {
+    if (!item.category || item.category === 'General') {
+      const newCategory = categorizeItem(item.name);
+      db.prepare("UPDATE pantry SET category = ? WHERE id = ?").run(newCategory, item.id);
+    }
+  }
+
+  db.exec(`
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_url', 'http://localhost:11434');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_model', 'llama3');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('import_prompt', 'Extract the recipe from the following text or URL content. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_prompt', 'Suggest a simple and delicious recipe based on these ingredients I have: {{content}}. \n\nDietary Preferences: {{dietaryOptions}}\nAdditional Instructions: {{additionalInstructions}}\n\nGuidelines:\n- Focus on simple recipes.\n- You do not need to use all provided ingredients.\n- Prioritize using the provided ingredients, but you can include common staples or other ingredients not listed if needed.\n\nOutput ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_options', 'FODMAP, Low Calorie, Vegetarian, Vegan, Gluten Free');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_suggest', '60000');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_import', '45000');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_ingredients', '30000');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_cleanup', '45000');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_pantry', '90000');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('cleanup_prompt', 'Review and improve the following recipe. Fix any typos, improve the clarity of the directions, and ensure the ingredient amounts are consistent. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('week_start_day', 'Monday');
+  `);
 
 async function startServer() {
   const app = express();
@@ -114,7 +150,7 @@ async function startServer() {
   });
 
   app.post("/api/settings", (req, res) => {
-    const { ollama_url, ollama_model, import_prompt, suggest_prompt, suggest_options, ollama_timeout_suggest, ollama_timeout_import, ollama_timeout_ingredients, cleanup_prompt, ollama_timeout_cleanup, week_start_day } = req.body;
+    const { ollama_url, ollama_model, import_prompt, suggest_prompt, suggest_options, ollama_timeout_suggest, ollama_timeout_import, ollama_timeout_ingredients, cleanup_prompt, ollama_timeout_cleanup, ollama_timeout_pantry, week_start_day } = req.body;
     const stmt = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
     if (ollama_url) stmt.run("ollama_url", ollama_url);
     if (ollama_model) stmt.run("ollama_model", ollama_model);
@@ -126,6 +162,7 @@ async function startServer() {
     if (ollama_timeout_ingredients) stmt.run("ollama_timeout_ingredients", String(ollama_timeout_ingredients));
     if (cleanup_prompt) stmt.run("cleanup_prompt", cleanup_prompt);
     if (ollama_timeout_cleanup) stmt.run("ollama_timeout_cleanup", String(ollama_timeout_cleanup));
+    if (ollama_timeout_pantry) stmt.run("ollama_timeout_pantry", String(ollama_timeout_pantry));
     if (week_start_day) stmt.run("week_start_day", week_start_day);
     res.json({ success: true });
   });
@@ -241,6 +278,63 @@ async function startServer() {
   });
 
   // AI Proxy for Ollama
+  app.post("/api/ai/optimize-pantry", async (req, res) => {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: "Items array required" });
+    }
+    
+    try {
+      const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as any;
+      const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as any;
+      const timeoutPantryRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_pantry'").get() as any;
+      
+      const OLLAMA_URL = urlRow?.value || "http://localhost:11434";
+      const OLLAMA_MODEL = modelRow?.value || "llama3";
+      const TIMEOUT = parseInt(timeoutPantryRow?.value) || 90000;
+      
+      const itemNames = items.map((i: any) => i.name).join(', ');
+      const prompt = `Given these pantry items: ${itemNames}. Categorize each into one of: Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry & Grains, Canned & Jarred, Frozen, Beverages, Spices & Baking, Other. 
+
+Example output format:
+[{"name": "Chicken", "category": "Meat & Seafood"}, {"name": "Milk", "category": "Dairy & Eggs"}]
+
+Output ONLY valid JSON array, no other text.`;
+
+      console.log("Calling Ollama for pantry optimize...");
+      const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
+        model: OLLAMA_MODEL,
+        prompt,
+        stream: false
+      }, {
+        timeout: TIMEOUT
+      });
+      
+      console.log("Ollama response:", response.data);
+      let responseText = response.data?.response || response.data;
+      
+      // Try to extract and parse JSON from response
+      try {
+        // Try direct parse first
+        let suggestions = JSON.parse(responseText);
+        res.json(suggestions);
+      } catch {
+        // Try to extract JSON from potential markdown
+        const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const suggestions = JSON.parse(jsonMatch[0]);
+          res.json(suggestions);
+        } else {
+          console.error("AI response not valid JSON:", responseText.substring(0, 200));
+          res.status(500).json({ error: "Invalid response format from AI" });
+        }
+      }
+    } catch (err: any) {
+      console.error("Pantry optimization error:", err.message || err.toString());
+      res.status(500).json({ error: err.message || err.toString() || "Failed to optimize pantry categories" });
+    }
+  });
+
   app.post("/api/ai/generate-ingredients", async (req, res) => {
     const { recipeName, pantryContext } = req.body;
     try {

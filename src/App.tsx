@@ -64,6 +64,8 @@ export default function App() {
     setTimeoutIngredients,
     timeoutCleanup,
     setTimeoutCleanup,
+    timeoutPantry,
+    setTimeoutPantry,
     cleanupPrompt,
     setCleanupPrompt,
     weekStartDay,
@@ -547,6 +549,8 @@ export default function App() {
         setCleanupPrompt={setCleanupPrompt}
         timeoutCleanup={timeoutCleanup}
         setTimeoutCleanup={setTimeoutCleanup}
+        timeoutPantry={timeoutPantry}
+        setTimeoutPantry={setTimeoutPantry}
         weekStartDay={weekStartDay}
         setWeekStartDay={setWeekStartDay}
       />

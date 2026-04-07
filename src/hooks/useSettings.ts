@@ -9,6 +9,7 @@ export function useSettings() {
   const [timeoutImport, setTimeoutImport] = useState(45000);
   const [timeoutIngredients, setTimeoutIngredients] = useState(30000);
   const [timeoutCleanup, setTimeoutCleanup] = useState(45000);
+  const [timeoutPantry, setTimeoutPantry] = useState(90000);
   const [cleanupPrompt, setCleanupPrompt] = useState('');
   const [weekStartDay, setWeekStartDay] = useState('Monday');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
@@ -46,6 +47,7 @@ export function useSettings() {
         setTimeoutImport(parseInt(data.ollama_timeout_import) || 45000);
         setTimeoutIngredients(parseInt(data.ollama_timeout_ingredients) || 30000);
         setTimeoutCleanup(parseInt(data.ollama_timeout_cleanup) || 45000);
+        setTimeoutPantry(parseInt(data.ollama_timeout_pantry) || 90000);
         setCleanupPrompt(data.cleanup_prompt || '');
         setWeekStartDay(data.week_start_day || 'Monday');
       } catch (err) {
@@ -70,6 +72,7 @@ export function useSettings() {
           ollama_timeout_import: timeoutImport,
           ollama_timeout_ingredients: timeoutIngredients,
           ollama_timeout_cleanup: timeoutCleanup,
+          ollama_timeout_pantry: timeoutPantry,
           cleanup_prompt: cleanupPrompt,
           week_start_day: weekStartDay
         })
@@ -117,6 +120,8 @@ export function useSettings() {
     setTimeoutIngredients,
     timeoutCleanup,
     setTimeoutCleanup,
+    timeoutPantry,
+    setTimeoutPantry,
     cleanupPrompt,
     setCleanupPrompt,
     weekStartDay,
