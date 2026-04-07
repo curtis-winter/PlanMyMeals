@@ -29,12 +29,14 @@
 - API endpoints under `/api/*` for meals, recipes, pantry, and AI functions
 - Vite handles frontend serving in dev, Express serves static files in prod
 - Database migrations are handled inline in server.ts startup
+- The "Scroll anchoring was disabled" warning in console is harmless - it's a browser optimization that doesn't affect functionality
 
 ## Docker Deployment
-- **Quick deploy**: Before deploying, increment the build number in `build-number.json`, then run `docker compose up -d --build`
+- **Quick deploy**: `./deploy.sh` (auto-increments build number and runs docker compose)
+- Manual deploy: `docker compose up -d --build`
 - Build image: `docker build -t mealplanner-app .`
 - Run container: `docker run -d --name mealplanner -p 3112:3112 mealplanner-app`
 - Stop container: `docker stop mealplanner`
 - Remove container: `docker rm mealplanner`
-- **IMPORTANT**: Use `docker compose up -d --build` for deployments to preserve data and settings.
-- **Local Build ID**: The header turns red and shows build number on localhost. Edit `build-number.json` to increment before deploying.
+- **IMPORTANT**: Use `./deploy.sh` or `docker compose up -d --build` for deployments to preserve data and settings.
+- **Local Build ID**: The header turns red and shows build number on localhost. The `./deploy.sh` script auto-increments this.

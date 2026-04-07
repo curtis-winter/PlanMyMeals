@@ -143,7 +143,7 @@ export default function App() {
   const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
   const today = new Date();
-  const todayName = DAYS_OF_WEEK[(today.getDay() + 6) % 7];
+  today.setHours(0, 0, 0, 0);
 
   const orderedDays = React.useMemo(() => {
     const startIndex = DAYS_OF_WEEK.indexOf(weekStartDay as DayOfWeek);
@@ -157,17 +157,36 @@ export default function App() {
     const offset = (dayIndex - startIndex + 7) % 7;
     const date = new Date(currentWeekStart + 'T00:00:00');
     date.setDate(date.getDate() + offset);
+    date.setHours(0, 0, 0, 0);
     return date;
+  };
+
+  const isToday = (day: DayOfWeek) => {
+    const dayDate = getDayDate(day);
+    return dayDate.getTime() === today.getTime();
   };
 
   const [expandedDay, setExpandedDay] = useState<DayOfWeek | null>(null);
 
-  // Set initial expanded day to today on load
+  // Set initial expanded day to today's day on load, only if current week contains today
   React.useEffect(() => {
-    if (!expandedDay) {
-      setExpandedDay(todayName);
+    if (orderedDays.length > 0 && currentWeekStart) {
+      // Check if current week contains today
+      const weekStart = new Date(currentWeekStart + 'T00:00:00');
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      if (today >= weekStart && today <= weekEnd) {
+        // Week contains today - expand today's day
+        const diff = Math.floor((today.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
+        const dayIndex = ((diff % 7) + 7) % 7;
+        setExpandedDay(orderedDays[dayIndex]);
+      } else {
+        // Week doesn't contain today - keep all minimized
+        setExpandedDay(null);
+      }
     }
-  }, []);
+  }, [orderedDays, currentWeekStart]);
 
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [showPantryManager, setShowPantryManager] = useState(false);
@@ -320,7 +339,23 @@ export default function App() {
                 Week of {new Date(currentWeekStart + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
               </h2>
               <p className="text-xs text-neutral-theme font-medium uppercase tracking-widest">
-                {currentWeekStart === getWeekStart(new Date()) ? 'Current Week' : 'History'}
+                {(() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const current = new Date(currentWeekStart + 'T00:00:00');
+                  current.setHours(0, 0, 0, 0);
+                  
+                  // Get the configured week start day
+                  const configuredStart = (weekStartDay as DayOfWeek) || 'Monday';
+                  const thisWeeksStartStr = getWeekStart(today, configuredStart);
+                  const thisWeeksStart = new Date(thisWeeksStartStr + 'T00:00:00');
+                  const thisWeeksEnd = new Date(thisWeeksStart);
+                  thisWeeksEnd.setDate(thisWeeksEnd.getDate() + 6);
+                  
+                  if (current.getTime() === thisWeeksStart.getTime()) return 'Current Week';
+                  if (current > today) return 'Future Week';
+                  return 'Past Week';
+                })()}
               </p>
             </div>
             <button 
@@ -357,7 +392,7 @@ export default function App() {
             <DayCard
               key={day}
               day={day}
-              isToday={day === todayName}
+              isToday={isToday(day)}
               date={getDayDate(day)}
               recipes={plan[day].recipes}
               instructions={plan[day].instructions}
