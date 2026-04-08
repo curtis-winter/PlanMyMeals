@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    network_mode: host
     ports:
       - "3112:3112"
     volumes:

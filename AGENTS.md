@@ -9,7 +9,7 @@
 
 ## Git Repository
 - **Remote URL**: https://github.com/curtis-winter/PlanMyMeals
-- **Behavior**: Changes are NOT merged automatically - requires explicit instruction from user
+- **Behavior**: Changes are NOT pushed to remote automatically - requires explicit instruction from user
 
 ## Key Architecture Notes
 - Server file `server.ts` combines Express API with Vite middleware

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, CheckCircle2, Copy, Check, Search, Sparkles, Loader2, X } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Copy, Check, Search, Sparkles, Loader2, X, Smartphone } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 
@@ -52,6 +52,15 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
           setCheckedItems({});
         }
       }
+      // Load AI-updated categories
+      const savedCategories = localStorage.getItem('shoppingList_categories');
+      if (savedCategories) {
+        try {
+          setItemCategories(JSON.parse(savedCategories));
+        } catch {
+          setItemCategories({});
+        }
+      }
     }
   }, [isOpen]);
 
@@ -67,6 +76,12 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
   const saveCheckedState = (state: Record<string, boolean>) => {
     setCheckedItems(state);
     localStorage.setItem('shoppingList_checkedItems', JSON.stringify(state));
+  };
+
+  // Save AI-updated categories to localStorage
+  const saveItemCategories = (categories: Record<string, string>) => {
+    setItemCategories(categories);
+    localStorage.setItem('shoppingList_categories', JSON.stringify(categories));
   };
 
   // Toggle item checked state
@@ -168,7 +183,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
           }
         }
         console.log('New categories to apply:', newCategories);
-        setItemCategories(prev => ({ ...prev, ...newCategories }));
+        saveItemCategories({ ...itemCategories, ...newCategories });
       }
     } catch (err) {
       console.error('Failed to optimize:', err);
@@ -231,14 +246,25 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
       maxWidth="max-w-md"
       icon={<ShoppingCart className="text-background-theme w-5 h-5" />}
       headerActions={
-        <button
-          onClick={handleOptimizeCategories}
-          disabled={isOptimizing || allItems.length === 0}
-          className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
-          title="Organize with AI"
-        >
-          {isOptimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-1">
+          <a
+            href="/mobile"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            title="Open Mobile Version"
+          >
+            <Smartphone className="w-4 h-4" />
+          </a>
+          <button
+            onClick={handleOptimizeCategories}
+            disabled={isOptimizing || allItems.length === 0}
+            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+            title="Organize with AI"
+          >
+            {isOptimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          </button>
+        </div>
       }
       footer={
         <div className="space-y-3">
