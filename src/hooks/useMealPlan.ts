@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { WeeklyPlan, DayOfWeek, Meal, RecipeInstance, Ingredient, DAYS_OF_WEEK, getWeekStart, Recipe, PantryItem, Task } from '../types';
 import { generateId } from '../utils/id';
 
@@ -11,7 +11,6 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date(), weekStartDay));
   const [plan, setPlan] = useState<WeeklyPlan>(INITIAL_PLAN);
 
-  // Update week start if setting changes
   useEffect(() => {
     setCurrentWeekStart(getWeekStart(new Date(), weekStartDay));
   }, [weekStartDay]);
@@ -28,7 +27,6 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
         const data = await res.json();
         const newPlan = { ...INITIAL_PLAN };
         data.forEach((row: any) => {
-          // Handle migration from old string[] to new Task[]
           const rawInstructions = JSON.parse(row.instructions || '[]');
           const instructions = rawInstructions.map((item: any) => {
             if (typeof item === 'string') {
@@ -66,6 +64,31 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     }
   };
 
+  const debouncedSaveRef = useRef<Map<DayOfWeek, ReturnType<typeof setTimeout>>>(new Map());
+  
+  const debouncedSave = useCallback((day: DayOfWeek, meal: Meal) => {
+    const existing = debouncedSaveRef.current.get(day);
+    if (existing) clearTimeout(existing);
+    const timeout = setTimeout(() => {
+      saveDayPlan(day, meal);
+      debouncedSaveRef.current.delete(day);
+    }, 500);
+    debouncedSaveRef.current.set(day, timeout);
+  }, [currentWeekStart]);
+
+  const immediateSave = useCallback((day: DayOfWeek, meal: Meal) => {
+    const existing = debouncedSaveRef.current.get(day);
+    if (existing) clearTimeout(existing);
+    debouncedSaveRef.current.delete(day);
+    saveDayPlan(day, meal);
+  }, [currentWeekStart]);
+
+  useEffect(() => {
+    return () => {
+      debouncedSaveRef.current.forEach((timeout) => clearTimeout(timeout));
+    };
+  }, []);
+
   const addRecipeToDay = (day: DayOfWeek) => {
     const newRecipe: RecipeInstance = {
       id: generateId(),
@@ -78,7 +101,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     };
     const newMeal = { ...plan[day], recipes: [...plan[day].recipes, newRecipe] };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const updateRecipe = (day: DayOfWeek, index: number, updates: Partial<RecipeInstance>) => {
@@ -86,14 +109,14 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     newRecipes[index] = { ...newRecipes[index], ...updates };
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    debouncedSave(day, newMeal);
   };
 
   const removeRecipe = (day: DayOfWeek, index: number) => {
     const newRecipes = plan[day].recipes.filter((_, i) => i !== index);
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const addIngredient = (day: DayOfWeek, recipeIndex: number) => {
@@ -110,7 +133,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     };
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
     
     setTimeout(() => {
       const inputs = document.querySelectorAll(`[data-day="${day}"] [data-recipe="${recipeIndex}"] [data-type="amount"]`);
@@ -127,7 +150,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     };
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    debouncedSave(day, newMeal);
   };
 
   const removeIngredient = (day: DayOfWeek, recipeIndex: number, id: string) => {
@@ -138,7 +161,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     };
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const addDirection = (day: DayOfWeek, recipeIndex: number) => {
@@ -149,7 +172,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     };
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const updateDirection = (day: DayOfWeek, recipeIndex: number, dirIndex: number, value: string) => {
@@ -159,7 +182,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     newRecipes[recipeIndex] = { ...newRecipes[recipeIndex], directions: newDirections };
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    debouncedSave(day, newMeal);
   };
 
   const removeDirection = (day: DayOfWeek, recipeIndex: number, dirIndex: number) => {
@@ -168,7 +191,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     newRecipes[recipeIndex] = { ...newRecipes[recipeIndex], directions: newDirections };
     const newMeal = { ...plan[day], recipes: newRecipes };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const applyRecipeToDay = (recipe: Recipe, day: DayOfWeek) => {
@@ -186,7 +209,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
       recipes: [...plan[day].recipes, newRecipe]
     };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const shoppingList = useMemo(() => {
@@ -210,7 +233,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     const newInstructions = [...(plan[day].instructions || []), newTask];
     const newMeal = { ...plan[day], instructions: newInstructions };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const updateInstruction = (day: DayOfWeek, index: number, value: string) => {
@@ -218,14 +241,14 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     newInstructions[index] = { ...newInstructions[index], text: value };
     const newMeal = { ...plan[day], instructions: newInstructions };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    debouncedSave(day, newMeal);
   };
 
   const removeInstruction = (day: DayOfWeek, index: number) => {
     const newInstructions = (plan[day].instructions || []).filter((_, i) => i !== index);
     const newMeal = { ...plan[day], instructions: newInstructions };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
   const toggleTaskComplete = (day: DayOfWeek, index: number) => {
@@ -233,48 +256,44 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     newInstructions[index] = { ...newInstructions[index], completed: !newInstructions[index].completed };
     const newMeal = { ...plan[day], instructions: newInstructions };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
-    saveDayPlan(day, newMeal);
+    immediateSave(day, newMeal);
   };
 
-   const navigateWeek = (direction: number) => {
-     // Use local date parts to avoid timezone shifts when navigating
-     const [year, month, day] = currentWeekStart.split('-').map(Number);
-     const date = new Date(year, month - 1, day);
-     date.setDate(date.getDate() + (direction * 7));
-     setCurrentWeekStart(getWeekStart(date, weekStartDay));
-   };
+  const navigateWeek = (direction: number) => {
+    debouncedSaveRef.current.forEach((timeout) => clearTimeout(timeout));
+    debouncedSaveRef.current.clear();
+    
+    const [year, month, day] = currentWeekStart.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + (direction * 7));
+    setCurrentWeekStart(getWeekStart(date, weekStartDay));
+  };
 
-   const moveRecipe = (fromDay: DayOfWeek, toDay: DayOfWeek, recipeIndex: number) => {
-     // Don't do anything if moving within the same day
-     if (fromDay === toDay) return;
-     
-     // Get the recipe to move
-     const recipe = plan[fromDay].recipes[recipeIndex];
-     
-     // Remove recipe from source day
-     const updatedFromDayRecipes = [
-       ...plan[fromDay].recipes.slice(0, recipeIndex),
-       ...plan[fromDay].recipes.slice(recipeIndex + 1)
-     ];
-     const updatedFromDay = { ...plan[fromDay], recipes: updatedFromDayRecipes };
-     
-     // Add recipe to target day
-     const updatedToDay = { 
-       ...plan[toDay], 
-       recipes: [...plan[toDay].recipes, recipe] 
-     };
-     
-     // Update the plan state
-     setPlan(prev => ({
-       ...prev,
-       [fromDay]: updatedFromDay,
-       [toDay]: updatedToDay
-     }));
-     
-     // Save the updated plan
-     saveDayPlan(fromDay, updatedFromDay);
-     saveDayPlan(toDay, updatedToDay);
-   };
+  const moveRecipe = (fromDay: DayOfWeek, toDay: DayOfWeek, recipeIndex: number) => {
+    if (fromDay === toDay) return;
+    
+    const recipe = plan[fromDay].recipes[recipeIndex];
+    
+    const updatedFromDayRecipes = [
+      ...plan[fromDay].recipes.slice(0, recipeIndex),
+      ...plan[fromDay].recipes.slice(recipeIndex + 1)
+    ];
+    const updatedFromDay = { ...plan[fromDay], recipes: updatedFromDayRecipes };
+    
+    const updatedToDay = { 
+      ...plan[toDay], 
+      recipes: [...plan[toDay].recipes, recipe] 
+    };
+    
+    setPlan(prev => ({
+      ...prev,
+      [fromDay]: updatedFromDay,
+      [toDay]: updatedToDay
+    }));
+    
+    immediateSave(fromDay, updatedFromDay);
+    immediateSave(toDay, updatedToDay);
+  };
 
   return {
     plan,

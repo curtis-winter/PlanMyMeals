@@ -79,7 +79,6 @@ function DraggableRecipeCard({
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/json', JSON.stringify({ day, recipeIndex }));
-    console.log('Drag start:', day, recipeIndex);
     if (onDragStart) onDragStart(day, recipeIndex);
   };
 
@@ -91,13 +90,10 @@ function DraggableRecipeCard({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Drop on recipe card:', day, recipeIndex);
     if (onDrop) onDrop(day, recipeIndex);
   };
 
-  const handleDragEnd = () => {
-    console.log('Drag end');
-  };
+  const handleDragEnd = () => {};
 
   return (
     <div 
@@ -186,10 +182,15 @@ export const DayCard: React.FC<DayCardProps> = ({
   return (
     <motion.div 
       layout
+      style={{ zIndex: 1, position: 'relative' }}
       className={`bg-surface rounded-2xl border transition-all duration-200 ${
         isToday ? 'border-4 border-primary shadow-lg scale-[1.02]' : 
         isExpanded ? 'border-primary shadow-md ring-1 ring-primary/20' : 'border-border-theme shadow-sm hover:border-primary/50'
       }`}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }}
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
@@ -197,6 +198,9 @@ export const DayCard: React.FC<DayCardProps> = ({
       onDrop={(e) => {
         e.preventDefault();
         if (onDrop) onDrop(day, 0);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
       }}
     >
       <button
@@ -390,6 +394,10 @@ export const DayCard: React.FC<DayCardProps> = ({
                 {/* Recipe Cards with Drag and Drop */}
                 <div 
                   className="space-y-4 min-h-[50px]"
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
@@ -406,7 +414,13 @@ export const DayCard: React.FC<DayCardProps> = ({
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = 'move';
                         e.dataTransfer.setData('text/plain', `${day}|${recipeIndex}`);
+                        // @ts-ignore - Firefox global workaround
+                        window.__DRAG_DATA__ = { day, recipeIndex };
+                        (e.target as HTMLElement).style.opacity = '0.5';
                         if (onDragStart) onDragStart(day, recipeIndex);
+                      }}
+                      onDragEnd={(e) => {
+                        (e.target as HTMLElement).style.opacity = '1';
                       }}
                       onDragOver={(e) => {
                         e.preventDefault();

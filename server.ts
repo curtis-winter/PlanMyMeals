@@ -106,45 +106,7 @@ try {
 
 
 
-// Initialize default settings
-db.exec(`
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_url', 'http://localhost:11434');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_model', 'llama3');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('import_prompt', 'Extract the recipe from the following text or URL content. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_prompt', 'Suggest a simple and delicious recipe based on these ingredients I have: {{content}}. \n\nDietary Preferences: {{dietaryOptions}}\nAdditional Instructions: {{additionalInstructions}}\n\nGuidelines:\n- Focus on simple recipes.\n- You do not need to use all provided ingredients.\n- Prioritize using the provided ingredients, but you can include common staples or other ingredients not listed if needed.\n\nOutput ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_options', 'FODMAP, Low Calorie, Vegetarian, Vegan, Gluten Free');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_suggest', '60000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_import', '45000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_ingredients', '30000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_cleanup', '45000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_pantry', '90000');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('cleanup_prompt', 'Review and improve the following recipe. Fix any typos, improve the clarity of the directions, and ensure the ingredient amounts are consistent. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('week_start_day', 'Monday');
-`);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS recipes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    ingredients TEXT,
-    directions TEXT,
-    rating INTEGER DEFAULT 0,
-    tags TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS pantry (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    category TEXT
-  );
-`);
-
-  // Migration: Update legacy "General" categories to proper sections
+function initializeDatabase() {
   const categorizeItem = (name: string): string => {
     const lowerName = name.toLowerCase();
     const sections: Record<string, string[]> = {
@@ -166,7 +128,6 @@ db.exec(`
     return 'Other';
   };
   
-  // Migrate pantry items with "General" or null category
   const pantryItems = db.prepare("SELECT id, name, category FROM pantry").all() as any[];
   for (const item of pantryItems) {
     if (!item.category || item.category === 'General') {
@@ -174,23 +135,11 @@ db.exec(`
       db.prepare("UPDATE pantry SET category = ? WHERE id = ?").run(newCategory, item.id);
     }
   }
-
-  db.exec(`
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_url', 'http://localhost:11434');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_model', 'llama3');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('import_prompt', 'Extract the recipe from the following text or URL content. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_prompt', 'Suggest a simple and delicious recipe based on these ingredients I have: {{content}}. \n\nDietary Preferences: {{dietaryOptions}}\nAdditional Instructions: {{additionalInstructions}}\n\nGuidelines:\n- Focus on simple recipes.\n- You do not need to use all provided ingredients.\n- Prioritize using the provided ingredients, but you can include common staples or other ingredients not listed if needed.\n\nOutput ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_options', 'FODMAP, Low Calorie, Vegetarian, Vegan, Gluten Free');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_suggest', '60000');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_import', '45000');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_ingredients', '30000');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_cleanup', '45000');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_pantry', '90000');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('cleanup_prompt', 'Review and improve the following recipe. Fix any typos, improve the clarity of the directions, and ensure the ingredient amounts are consistent. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}');
-    INSERT OR IGNORE INTO settings (key, value) VALUES ('week_start_day', 'Monday');
-  `);
+}
 
 async function startServer() {
+  initializeDatabase();
+
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3112;
 
