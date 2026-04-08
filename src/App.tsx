@@ -402,7 +402,8 @@ export default function App() {
               addRecipeToDay={addRecipeToDay}
               updateRecipe={updateRecipe}
               removeRecipe={removeRecipe}
-              saveToRecipeBook={saveToRecipeBook}
+saveToRecipeBook={saveToRecipeBook}
+              bookRecipes={recipes}
               addIngredient={addIngredient}
               updateIngredient={handleUpdateIngredient}
               removeIngredient={removeIngredient}

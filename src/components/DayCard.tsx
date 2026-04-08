@@ -15,6 +15,7 @@ interface DayCardProps {
   updateRecipe: (day: DayOfWeek, index: number, updates: Partial<RecipeInstance>) => void;
   removeRecipe: (day: DayOfWeek, index: number) => void;
   saveToRecipeBook: (recipe: RecipeInstance) => void;
+  bookRecipes?: Recipe[];
   addIngredient: (day: DayOfWeek, recipeIndex: number) => void;
   updateIngredient: (day: DayOfWeek, recipeIndex: number, id: string, updates: Partial<Ingredient>) => void;
   removeIngredient: (day: DayOfWeek, recipeIndex: number, id: string) => void;
@@ -141,6 +142,7 @@ export const DayCard: React.FC<DayCardProps> = ({
   updateRecipe,
   removeRecipe,
   saveToRecipeBook,
+  bookRecipes = [],
   addIngredient,
   updateIngredient,
   removeIngredient,
@@ -457,6 +459,7 @@ export const DayCard: React.FC<DayCardProps> = ({
                               updateRecipe(day, recipeIndex, { recipeId: newId });
                             }
                           }}
+                          savedRecipe={recipe.recipeId ? bookRecipes.find(r => r.id === recipe.recipeId) : null}
                           pantryNames={pantryNames}
                         />
                       </div>

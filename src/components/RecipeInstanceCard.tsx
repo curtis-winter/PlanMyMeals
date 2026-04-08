@@ -19,6 +19,7 @@ interface RecipeInstanceCardProps {
   removeDirection: (day: DayOfWeek, recipeIndex: number, dirIndex: number, value: string) => void;
   onCook: (recipe: Recipe) => void;
   onSaveToRecipeBook?: (recipe: Recipe) => void;
+  savedRecipe?: Recipe | null;
   pantryNames: Set<string>;
   isDraggable?: boolean;
 }
@@ -118,9 +119,24 @@ export const RecipeInstanceCard: React.FC<RecipeInstanceCardProps> = ({
   removeDirection,
   onCook,
   onSaveToRecipeBook,
+  savedRecipe,
   pantryNames,
   isDraggable
 }) => {
+  const hasChanges = React.useMemo(() => {
+    if (!savedRecipe) return true; // No recipe in book = needs saving
+    if (recipe.name !== savedRecipe.name) return true;
+    
+    const currentIng = recipe.ingredients.map(i => i.name.toLowerCase()).sort();
+    const savedIng = savedRecipe.ingredients.map(i => i.name.toLowerCase()).sort();
+    if (JSON.stringify(currentIng) !== JSON.stringify(savedIng)) return true;
+    
+    const currentDir = recipe.directions.map(d => d.toLowerCase()).sort();
+    const savedDir = savedRecipe.directions.map(d => d.toLowerCase()).sort();
+    if (JSON.stringify(currentDir) !== JSON.stringify(savedDir)) return true;
+    
+    return false;
+  }, [recipe, savedRecipe]);
   const isSpecialEntry = recipe.name === "Leftovers" || recipe.name?.startsWith("Eat Out:");
 
   return (
@@ -156,7 +172,7 @@ export const RecipeInstanceCard: React.FC<RecipeInstanceCardProps> = ({
            )}
          </div>
 <div className="flex items-center gap-1">
-            {!isSpecialEntry && onSaveToRecipeBook && (
+            {!isSpecialEntry && onSaveToRecipeBook && hasChanges && (
               <button
                 onClick={() => onSaveToRecipeBook(recipe as Recipe)}
                 className="p-2 text-accent-theme hover:bg-accent-theme/10 rounded-lg transition-all"
