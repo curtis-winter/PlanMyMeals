@@ -10,9 +10,34 @@ import axios from "axios";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dataDir = "/app/data";
+const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 const db = new Database(path.join(dataDir, "meals.db"));
+
+/**
+ * Helper function to get Ollama configuration from settings
+ * @returns {{url: string, model: string}} Ollama configuration with url and model
+ */
+function getOllamaConfig() {
+  const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as {value?: string} | undefined;
+  const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as {value?: string} | undefined;
+  
+  return {
+    url: urlRow?.value || "http://localhost:11434",
+    model: modelRow?.value || "llama3"
+  };
+}
+
+/**
+ * Helper function to get specific Ollama timeout from settings
+ * @param {string} key - The settings key for the timeout
+ * @param {number} defaultValue - Default timeout value in milliseconds
+ * @returns {number} Timeout value in milliseconds
+ */
+function getOllamaTimeout(key: string, defaultValue: number): number {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key) as {value?: string} | undefined;
+  return row && row.value !== undefined ? parseInt(row.value) : defaultValue;
+}
 
 // Initialize DB
 db.exec(`
@@ -24,18 +49,39 @@ db.exec(`
     UNIQUE(week_start, day)
   );
 
-  -- Migration: Add recipes column if it doesn't exist (for older DBs)
-  -- Since SQLite doesn't support IF NOT EXISTS for ADD COLUMN, we use a try-catch pattern in JS if needed,
-  -- but for this environment, we can just try to add it and ignore the error if it exists.
+  CREATE TABLE IF NOT EXISTS recipes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    ingredients TEXT,
+    directions TEXT,
+    rating INTEGER DEFAULT 0,
+    tags TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS pantry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    category TEXT
+  );
 `);
 
+// Migration: Add columns if they don't exist (for older DBs)
 try {
   db.exec("ALTER TABLE meal_plans ADD COLUMN recipes TEXT;");
-} catch (e) {}
+} catch (e) {
+  // Column likely already exists
+}
 
 try {
   db.exec("ALTER TABLE meal_plans ADD COLUMN instructions TEXT;");
-} catch (e) {}
+} catch (e) {
+  // Column likely already exists
+}
 
 try {
   db.exec("ALTER TABLE recipes ADD COLUMN directions TEXT;");
@@ -48,6 +94,33 @@ try {
 } catch (e) {
   // Column likely already exists
 }
+
+// Migrate existing data
+try {
+  db.exec(`
+    UPDATE meal_plans SET recipes = '[]' WHERE recipes IS NULL OR recipes = '';
+  `);
+} catch (e) {
+  // Ignore migration errors
+}
+
+
+
+// Initialize default settings
+db.exec(`
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_url', 'http://localhost:11434');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_model', 'llama3');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('import_prompt', 'Extract the recipe from the following text or URL content. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_prompt', 'Suggest a simple and delicious recipe based on these ingredients I have: {{content}}. \n\nDietary Preferences: {{dietaryOptions}}\nAdditional Instructions: {{additionalInstructions}}\n\nGuidelines:\n- Focus on simple recipes.\n- You do not need to use all provided ingredients.\n- Prioritize using the provided ingredients, but you can include common staples or other ingredients not listed if needed.\n\nOutput ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('suggest_options', 'FODMAP, Low Calorie, Vegetarian, Vegan, Gluten Free');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_suggest', '60000');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_import', '45000');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_ingredients', '30000');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_cleanup', '45000');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ollama_timeout_pantry', '90000');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('cleanup_prompt', 'Review and improve the following recipe. Fix any typos, improve the clarity of the directions, and ensure the ingredient amounts are consistent. Output ONLY a JSON object with "name", "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('week_start_day', 'Monday');
+`);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS recipes (
@@ -213,38 +286,55 @@ async function startServer() {
   });
 
   app.post("/api/recipes", (req, res) => {
-    const { id, name, ingredients, directions, rating, tags } = req.body;
-    
-    // Check by ID first if provided
-    if (id) {
-      const existing = db.prepare("SELECT id FROM recipes WHERE id = ?").get(id) as any;
+    try {
+      console.log("POST /api/recipes body:", req.body);
+      const { id, name, ingredients, directions, rating, tags } = req.body;
+      
+      if (!name) {
+        res.status(400).json({ error: "Recipe name is required" });
+        return;
+      }
+      
+      // Ensure arrays are actually arrays
+      const safeIngredients = Array.isArray(ingredients) ? ingredients : [];
+      const safeDirections = Array.isArray(directions) ? directions : [];
+      const safeTags = Array.isArray(tags) ? tags : [];
+      
+      // Check by ID first if provided
+      if (id) {
+        const existing = db.prepare("SELECT id FROM recipes WHERE id = ?").get(id) as any;
+        if (existing) {
+          db.prepare(`
+            UPDATE recipes SET name = ?, ingredients = ?, directions = ?, rating = ?, tags = ?
+            WHERE id = ?
+          `).run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags), id);
+          res.json({ success: true });
+          return;
+        }
+      }
+      
+      // Check by name
+      const existing = db.prepare("SELECT id FROM recipes WHERE LOWER(name) = LOWER(?)").get(name) as any;
       if (existing) {
         db.prepare(`
           UPDATE recipes SET name = ?, ingredients = ?, directions = ?, rating = ?, tags = ?
           WHERE id = ?
-        `).run(name, JSON.stringify(ingredients), JSON.stringify(directions || []), rating || 0, JSON.stringify(tags || []), id);
+        `).run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags), existing.id);
         res.json({ success: true });
         return;
       }
-    }
-    
-    // Check by name
-    const existing = db.prepare("SELECT id FROM recipes WHERE LOWER(name) = LOWER(?)").get(name) as any;
-    if (existing) {
-      db.prepare(`
-        UPDATE recipes SET name = ?, ingredients = ?, directions = ?, rating = ?, tags = ?
-        WHERE id = ?
-      `).run(name, JSON.stringify(ingredients), JSON.stringify(directions || []), rating || 0, JSON.stringify(tags || []), existing.id);
+      
+      const stmt = db.prepare(`
+        INSERT INTO recipes (name, ingredients, directions, rating, tags)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      stmt.run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags));
       res.json({ success: true });
-      return;
+    } catch (err: any) {
+      console.error("Error saving recipe:", err);
+      console.error("Error stack:", err.stack);
+      res.status(500).json({ error: err.message || "Failed to save recipe" });
     }
-    
-    const stmt = db.prepare(`
-      INSERT INTO recipes (name, ingredients, directions, rating, tags)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    stmt.run(name, JSON.stringify(ingredients), JSON.stringify(directions || []), rating || 0, JSON.stringify(tags || []));
-    res.json({ success: true });
   });
 
   app.delete("/api/recipes/:id", (req, res) => {
@@ -278,20 +368,15 @@ async function startServer() {
   });
 
   // AI Proxy for Ollama
-  app.post("/api/ai/optimize-pantry", async (req, res) => {
-    const { items } = req.body;
-    if (!items || !Array.isArray(items)) {
-      return res.status(400).json({ error: "Items array required" });
-    }
-    
-    try {
-      const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as any;
-      const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as any;
-      const timeoutPantryRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_pantry'").get() as any;
-      
-      const OLLAMA_URL = urlRow?.value || "http://localhost:11434";
-      const OLLAMA_MODEL = modelRow?.value || "llama3";
-      const TIMEOUT = parseInt(timeoutPantryRow?.value) || 90000;
+   app.post("/api/ai/optimize-pantry", async (req, res) => {
+     const { items } = req.body;
+     if (!items || !Array.isArray(items)) {
+       return res.status(400).json({ error: "Items array required" });
+     }
+     
+     try {
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const TIMEOUT = getOllamaTimeout('ollama_timeout_pantry', 90000);
       
       const itemNames = items.map((i: any) => i.name).join(', ');
       const prompt = `Given these pantry items: ${itemNames}. Categorize each into one of: Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry & Grains, Canned & Jarred, Frozen, Beverages, Spices & Baking, Other. 
@@ -335,16 +420,11 @@ Output ONLY valid JSON array, no other text.`;
     }
   });
 
-  app.post("/api/ai/generate-ingredients", async (req, res) => {
-    const { recipeName, pantryContext } = req.body;
-    try {
-      const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as any;
-      const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as any;
-      const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_ingredients'").get() as any;
-      
-      const OLLAMA_URL = urlRow?.value || "http://localhost:11434";
-      const OLLAMA_MODEL = modelRow?.value || "llama3";
-      const TIMEOUT = parseInt(timeoutRow?.value) || 30000;
+   app.post("/api/ai/generate-ingredients", async (req, res) => {
+     const { recipeName, pantryContext } = req.body;
+     try {
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const TIMEOUT = getOllamaTimeout('ollama_timeout_ingredients', 30000);
 
       let prompt = `List the ingredients for "${recipeName}" with their typical amounts. Output ONLY a JSON array of objects with "name" and "amount" keys. Example: [{"name": "Chicken", "amount": "500g"}]. No extra text.`;
       
@@ -374,17 +454,11 @@ Output ONLY valid JSON array, no other text.`;
     }
   });
 
-  app.post("/api/ai/suggest-recipe", async (req, res) => {
-    const { pantryContext, additionalInstructions, dietaryOptions, recipeCount, useDifferentProteins, plannedRecipes } = req.body;
-    try {
-      const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as any;
-      const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as any;
-      const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'suggest_prompt'").get() as any;
-      const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_suggest'").get() as any;
-      
-      const OLLAMA_URL = urlRow?.value || "http://localhost:11434";
-      const OLLAMA_MODEL = modelRow?.value || "llama3";
-      const TIMEOUT = parseInt(timeoutRow?.value) || 60000;
+   app.post("/api/ai/suggest-recipe", async (req, res) => {
+     const { pantryContext, additionalInstructions, dietaryOptions, recipeCount, useDifferentProteins, plannedRecipes } = req.body;
+     try {
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const TIMEOUT = getOllamaTimeout('ollama_timeout_suggest', 60000);
       
       const count = parseInt(recipeCount) || 1;
       let finalPrompt = '';
@@ -461,25 +535,22 @@ Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings")
     }
   });
   
-  app.post("/api/ai/import-recipe", async (req, res) => {
-    const { url, text } = req.body;
-    try {
-      let content = text || "";
-      if (url) {
-        const response = await axios.get(url);
-        // Simple HTML to text
-        content = response.data.replace(/<[^>]*>?/gm, ' ').replace(/\s\s+/g, ' ');
-      }
-      
-      const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as any;
-      const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as any;
-      const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'import_prompt'").get() as any;
-      const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_import'").get() as any;
-      
-      const OLLAMA_URL = urlRow?.value || "http://localhost:11434";
-      const OLLAMA_MODEL = modelRow?.value || "llama3";
-      const IMPORT_PROMPT = promptRow?.value || 'Extract the recipe from the following content. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}';
-      const TIMEOUT = parseInt(timeoutRow?.value) || 45000;
+   app.post("/api/ai/import-recipe", async (req, res) => {
+     const { url, text } = req.body;
+     try {
+       let content = text || "";
+       if (url) {
+         const response = await axios.get(url);
+         // Simple HTML to text
+         content = response.data.replace(/<[^>]*>?/gm, ' ').replace(/\s\s+/g, ' ');
+       }
+       
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'import_prompt'").get() as {value?: string} | undefined;
+       const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_import'").get() as {value?: string} | undefined;
+       
+       const IMPORT_PROMPT = promptRow?.value || 'Extract the recipe from the following content. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}';
+       const TIMEOUT = getOllamaTimeout('ollama_timeout_import', 45000);
       
       const finalPrompt = IMPORT_PROMPT.replace("{{content}}", content);
       
@@ -505,18 +576,15 @@ Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings")
     }
   });
 
-  app.post("/api/ai/cleanup-recipe", async (req, res) => {
-    const { recipe, additionalInstructions } = req.body;
-    try {
-      const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as any;
-      const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as any;
-      const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'cleanup_prompt'").get() as any;
-      const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_cleanup'").get() as any;
-      
-      const OLLAMA_URL = urlRow?.value || "http://localhost:11434";
-      const OLLAMA_MODEL = modelRow?.value || "llama3";
-      const CLEANUP_PROMPT = promptRow?.value || 'Review and improve the following recipe. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}';
-      const TIMEOUT = parseInt(timeoutRow?.value) || 45000;
+   app.post("/api/ai/cleanup-recipe", async (req, res) => {
+     const { recipe, additionalInstructions } = req.body;
+     try {
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'cleanup_prompt'").get() as {value?: string} | undefined;
+       const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_cleanup'").get() as {value?: string} | undefined;
+       
+       const CLEANUP_PROMPT = promptRow?.value || 'Review and improve the following recipe. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}';
+       const TIMEOUT = getOllamaTimeout('ollama_timeout_cleanup', 45000);
       
       let finalPrompt = CLEANUP_PROMPT.replace("{{content}}", JSON.stringify(recipe));
       if (additionalInstructions) {
@@ -545,20 +613,12 @@ Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings")
     }
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
+  // Vite middleware serves the React app in both development and production
+  const vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: "spa",
+  });
+  app.use(vite.middlewares);
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

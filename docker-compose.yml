@@ -2,9 +2,6 @@ services:
   app:
     build: .
     network_mode: host
-    environment:
-      - NODE_ENV=production
-      - OLLAMA_URL=http://host.docker.internal:11434
     volumes:
       - ./build-number.json:/app/build-number.json:ro
       - meals_data:/app/data

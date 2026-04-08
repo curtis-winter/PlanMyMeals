@@ -13,9 +13,9 @@
 
 ## Key Architecture Notes
 - Server file `server.ts` combines Express API with Vite middleware
-- Database: SQLite via better-sqlite3 (meals.db)
+- Database: SQLite via better-sqlite3 (meals.db in data directory)
 - AI integration: Ollama (local LLM) via custom API endpoints
-- Environment: Requires OLLAMA_URL and OLLAMA_MODEL in .env
+- Environment: Ollama configuration is managed through application settings (no .env required)
 - Frontend: React + TailwindCSS served via Vite
 
 ## File Conventions
@@ -32,11 +32,11 @@
 - The "Scroll anchoring was disabled" warning in console is harmless - it's a browser optimization that doesn't affect functionality
 
 ## Docker Deployment
-- **Quick deploy**: `./deploy.sh` (auto-increments build number and runs docker compose)
+- **Quick deploy**: `./deploy.sh` (auto-increments build number, displays it in terminal, and runs docker compose)
 - Manual deploy: `docker compose up -d --build`
 - Build image: `docker build -t mealplanner-app .`
 - Run container: `docker run -d --name mealplanner -p 3112:3112 mealplanner-app`
 - Stop container: `docker stop mealplanner`
 - Remove container: `docker rm mealplanner`
 - **IMPORTANT**: Use `./deploy.sh` or `docker compose up -d --build` for deployments to preserve data and settings.
-- **Local Build ID**: The header turns red and shows build number on localhost. The `./deploy.sh` script auto-increments this.
+- **Build Number**: The header turns red and shows build number on localhost. The `./deploy.sh` script auto-increments this and displays it during deployment.
