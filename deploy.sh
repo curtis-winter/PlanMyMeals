@@ -22,7 +22,17 @@ echo "  New build:     #${NEW_BUILD}"
 echo "=========================================="
 
 echo ""
-echo "Building and starting container..."
+echo "Running tests..."
+npm test
+TEST_RESULT=$?
+
+if [ $TEST_RESULT -ne 0 ]; then
+  echo "Tests failed! Aborting deployment."
+  exit 1
+fi
+
+echo ""
+echo "Tests passed! Building and starting container..."
 docker compose up -d --build
 
 echo ""
