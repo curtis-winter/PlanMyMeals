@@ -1,7 +1,8 @@
 services:
   app:
     build: .
-    network_mode: host
+    ports:
+      - "3112:3112"
     volumes:
       - ./build-number.json:/app/build-number.json:ro
       - meals_data:/app/data
