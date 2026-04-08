@@ -277,8 +277,10 @@ async function startServer() {
         INSERT INTO recipes (name, ingredients, directions, rating, tags)
         VALUES (?, ?, ?, ?, ?)
       `);
-      stmt.run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags));
-      res.json({ success: true });
+      const result = stmt.run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags));
+      // Get the new recipe ID
+      const newId = result.lastInsertRowid;
+      res.json({ success: true, id: newId });
     } catch (err: any) {
       console.error("Error saving recipe:", err);
       console.error("Error stack:", err.stack);

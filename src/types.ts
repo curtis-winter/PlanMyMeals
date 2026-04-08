@@ -13,6 +13,7 @@ export interface PantryItem {
 
 export interface RecipeInstance {
   id: string;
+  recipeId?: number; // Reference to recipe book ID for save/updating
   name: string;
   ingredients: Ingredient[];
   directions: string[];

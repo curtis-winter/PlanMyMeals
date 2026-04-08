@@ -197,6 +197,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
   const applyRecipeToDay = (recipe: Recipe, day: DayOfWeek) => {
     const newRecipe: RecipeInstance = {
       id: generateId(),
+      recipeId: recipe.id, // Preserve the recipe book ID for future updates
       name: recipe.name,
       ingredients: recipe.ingredients.map(ing => ({ ...ing, id: generateId(), isAvailable: false })),
       directions: recipe.directions || [],

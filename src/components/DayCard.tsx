@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, ChevronRight, Plus, Trash2, BookPlus, Utensils, History, Import, GripVertical, CheckCircle2, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, BookPlus, BookMarked, Utensils, History, Import, GripVertical, CheckCircle2, Circle } from 'lucide-react';
 import { DayOfWeek, RecipeInstance, Ingredient, PantryItem, Recipe, Task } from '../types';
 import { RecipeInstanceCard } from './RecipeInstanceCard';
 
@@ -140,6 +140,7 @@ export const DayCard: React.FC<DayCardProps> = ({
   addRecipeToDay,
   updateRecipe,
   removeRecipe,
+  saveToRecipeBook,
   addIngredient,
   updateIngredient,
   removeIngredient,
@@ -450,6 +451,12 @@ export const DayCard: React.FC<DayCardProps> = ({
                           updateDirection={updateDirection}
                           removeDirection={removeDirection}
                           onCook={onCook}
+                          onSaveToRecipeBook={async (r) => {
+                            const newId = await saveToRecipeBook(r);
+                            if (newId) {
+                              updateRecipe(day, recipeIndex, { recipeId: newId });
+                            }
+                          }}
                           pantryNames={pantryNames}
                         />
                       </div>

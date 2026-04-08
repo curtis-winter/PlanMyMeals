@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, ChevronRight, Plus, Trash2, CheckCircle2, Circle, Package, Play } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, CheckCircle2, Circle, Package, Play, BookMarked } from 'lucide-react';
 import { DayOfWeek, RecipeInstance, Ingredient, PantryItem, Recipe } from '../types';
+import { Modal } from './ui/Modal';
 
 interface RecipeInstanceCardProps {
   day: DayOfWeek;
@@ -15,8 +16,9 @@ interface RecipeInstanceCardProps {
   handleIngredientKeyDown: (e: React.KeyboardEvent, day: DayOfWeek, recipeIndex: number, id: string, type: 'amount' | 'name') => void;
   addDirection: (day: DayOfWeek, recipeIndex: number) => void;
   updateDirection: (day: DayOfWeek, recipeIndex: number, dirIndex: number, value: string) => void;
-  removeDirection: (day: DayOfWeek, recipeIndex: number, dirIndex: number) => void;
+  removeDirection: (day: DayOfWeek, recipeIndex: number, dirIndex: number, value: string) => void;
   onCook: (recipe: Recipe) => void;
+  onSaveToRecipeBook?: (recipe: Recipe) => void;
   pantryNames: Set<string>;
   isDraggable?: boolean;
 }
@@ -115,6 +117,7 @@ export const RecipeInstanceCard: React.FC<RecipeInstanceCardProps> = ({
   updateDirection,
   removeDirection,
   onCook,
+  onSaveToRecipeBook,
   pantryNames,
   isDraggable
 }) => {
@@ -152,23 +155,32 @@ export const RecipeInstanceCard: React.FC<RecipeInstanceCardProps> = ({
              </span>
            )}
          </div>
-         <div className="flex items-center gap-1">
-           {!isSpecialEntry && (
-             <button
-               onClick={() => onCook(recipe as Recipe)}
-               className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"
-               title="Cook This"
-             >
-               <Play className="w-4 h-4" />
-             </button>
-           )}
-           <button
-             onClick={() => removeRecipe(day, recipeIndex)}
-             className="p-2 text-neutral-theme hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-           >
-             <Trash2 className="w-4 h-4" />
-           </button>
-         </div>
+<div className="flex items-center gap-1">
+            {!isSpecialEntry && onSaveToRecipeBook && (
+              <button
+                onClick={() => onSaveToRecipeBook(recipe as Recipe)}
+                className="p-2 text-accent-theme hover:bg-accent-theme/10 rounded-lg transition-all"
+                title="Save to Recipe Book"
+              >
+                <BookMarked className="w-4 h-4" />
+              </button>
+            )}
+            {!isSpecialEntry && (
+              <button
+                onClick={() => onCook(recipe as Recipe)}
+                className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"
+                title="Cook This"
+              >
+                <Play className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => removeRecipe(day, recipeIndex)}
+              className="p-2 text-neutral-theme hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
        </div>
 
       <AnimatePresence>
