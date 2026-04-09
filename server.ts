@@ -377,7 +377,7 @@ Output ONLY valid JSON array, no other text.`;
        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
        const TIMEOUT = getOllamaTimeout('ollama_timeout_ingredients', 30000);
 
-      let prompt = `List the ingredients for "${recipeName}" with their typical amounts. Output ONLY a JSON array of objects with "name" and "amount" keys. Example: [{"name": "Chicken", "amount": "500g"}]. No extra text.`;
+      let prompt = `List the ingredients for "${recipeName}" with their typical amounts. Output ONLY a JSON array of objects with "name", "amount", and "preparation" keys. Example: [{"name": "Chicken", "amount": "500g", "preparation": "cubed"}]. If an ingredient has no preparation method, use null for that field. No extra text.`;
       
       if (pantryContext) {
         prompt += `\n\nContext: The user currently has the following in their pantry/fridge/freezer: ${pantryContext}. Please prioritize suggesting ingredients they already have if they are relevant to the recipe.`;

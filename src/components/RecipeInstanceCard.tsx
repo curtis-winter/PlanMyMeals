@@ -62,6 +62,15 @@ const IngredientRow: React.FC<{
           placeholder="Ingredient name..."
           className={`flex-1 bg-transparent border-none focus:ring-0 p-0 text-sm ${isAvailable ? 'text-neutral-theme/50 line-through' : 'text-primary'}`}
         />
+        <input
+          type="text"
+          value={ing.preparation || ''}
+          data-type="preparation"
+          onChange={(e) => updateIngredient(day, recipeIndex, ing.id, { preparation: e.target.value })}
+          onKeyDown={(e) => handleIngredientKeyDown(e, day, recipeIndex, ing.id, 'preparation')}
+          placeholder="prep"
+          className={`w-16 bg-transparent border-none focus:ring-0 p-0 text-xs italic ${isAvailable ? 'text-neutral-theme/50 line-through' : 'text-neutral-theme'}`}
+        />
         {isInPantry && (
           <Package className="w-3 h-3 text-primary/50" title="In Pantry" />
         )}

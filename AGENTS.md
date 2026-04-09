@@ -6,6 +6,13 @@
 - `npm run preview` - Preview production build
 - `npm run clean` - Remove dist directory
 - `npm run lint` - Type checking only (tsc --noEmit)
+- `npm run test` - Run tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage
+
+## Requirements
+- Node.js v20+ (use nvm to manage versions: `nvm use 20`)
+- Ollama running locally (default: http://localhost:11434)
 
 ## Git Repository
 - **Remote URL**: https://github.com/curtis-winter/PlanMyMeals
@@ -25,7 +32,7 @@
 - Database initialization occurs in server startup
 
 ## Important Gotchas
-- Ollama service must be running separately (default: http://localhost:11434)
+- Ollama should be running (default: http://localhost:11434). Configure via app settings if using a different URL.
 - API endpoints under `/api/*` for meals, recipes, pantry, and AI functions
 - Vite handles frontend serving in dev, Express serves static files in prod
 - Database migrations are handled inline in server.ts startup

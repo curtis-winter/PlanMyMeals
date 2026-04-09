@@ -2,6 +2,7 @@ export interface Ingredient {
   id: string;
   name: string;
   amount: string;
+  preparation?: string;
   isAvailable: boolean;
 }
 

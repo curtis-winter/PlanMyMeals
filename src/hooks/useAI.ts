@@ -42,6 +42,7 @@ export function useAI(
           id: generateId(),
           name: ing.name,
           amount: ing.amount,
+          preparation: ing.preparation || undefined,
           isAvailable: false
         })),
         directions: data.directions || [],
@@ -75,6 +76,7 @@ export function useAI(
           id: generateId(),
           name: ing.name,
           amount: ing.amount,
+          preparation: ing.preparation || undefined,
           isAvailable: false
         })),
         directions: result.directions || [],
@@ -158,6 +160,7 @@ export function useAI(
             id: generateId(),
             name: typeof ing === 'string' ? ing : (ing.name || ing.item || 'Unknown Ingredient'),
             amount: typeof ing === 'string' ? '' : (ing.amount || ing.quantity || ''),
+            preparation: typeof ing === 'string' ? undefined : (ing.preparation || undefined),
             isAvailable: false
           }));
 
@@ -213,6 +216,7 @@ export function useAI(
         id: generateId(),
         name: item.name,
         amount: item.amount,
+        preparation: item.preparation || undefined,
         isAvailable: false
       }));
 

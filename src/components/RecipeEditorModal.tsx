@@ -393,6 +393,15 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
                     placeholder="Ingredient name..."
                     className={`flex-1 border-none focus:ring-0 px-3 py-2 rounded-xl text-sm ${previewRecipe ? 'bg-primary/5 text-primary' : 'bg-surface text-primary'}`}
                   />
+                  <input
+                    type="text"
+                    value={ing.preparation || ''}
+                    readOnly={!!previewRecipe}
+                    data-type="preparation"
+                    onChange={(e) => updateIngredient(ing.id, { preparation: e.target.value })}
+                    placeholder="prep"
+                    className={`w-20 border-none focus:ring-0 px-3 py-2 rounded-xl text-sm italic ${previewRecipe ? 'bg-primary/5 text-primary' : 'bg-surface text-neutral-theme'}`}
+                  />
                   {!previewRecipe && (
                     <button
                       onClick={() => removeIngredient(ing.id)}
@@ -528,6 +537,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
                 <li key={i} className="text-sm text-primary flex gap-2">
                   <span className="font-mono text-neutral-theme">{ing.amount}</span>
                   <span>{ing.name}</span>
+                  {ing.preparation && <span className="italic text-neutral-theme">({ing.preparation})</span>}
                 </li>
               ))}
             </ul>
