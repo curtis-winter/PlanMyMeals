@@ -434,7 +434,7 @@ ${useDifferentProteins ? "- Minimize the overlap in meat protein used in the rec
 Output ONLY a valid JSON array of objects. Each object MUST have:
 - "name": (string)
 - "yield": (string, e.g. "4 servings")
-- "ingredients": (array of {name, amount})
+- "ingredients": (array of {name, amount, preparation})
 - "directions": (array of strings)
 
 Example output:
@@ -442,13 +442,13 @@ Example output:
   {
     "name": "Recipe 1",
     "yield": "4 servings",
-    "ingredients": [{"name": "Item", "amount": "1"}],
+    "ingredients": [{"name": "Item", "amount": "1", "preparation": "chopped"}],
     "directions": ["Step 1"]
   },
   {
     "name": "Recipe 2",
     "yield": "2 servings",
-    "ingredients": [{"name": "Item", "amount": "2"}],
+    "ingredients": [{"name": "Item", "amount": "2", "preparation": null}],
     "directions": ["Step 1"]
   }
 ]
@@ -460,7 +460,7 @@ No extra text.`;
 Dietary Preferences: ${dietaryOptions || "none"}
 Additional Instructions: ${additionalInstructions || "none"}${uniqueConstraint}
 
-Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.`;
+Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.`;
       }
       
       const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
@@ -500,7 +500,7 @@ Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings")
        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'import_prompt'").get() as {value?: string} | undefined;
        const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_import'").get() as {value?: string} | undefined;
        
-       const IMPORT_PROMPT = promptRow?.value || 'Extract the recipe from the following content. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nContent: {{content}}';
+        const IMPORT_PROMPT = promptRow?.value || 'Extract the recipe from the following content. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.\n\nContent: {{content}}';
        const TIMEOUT = getOllamaTimeout('ollama_timeout_import', 45000);
       
       const finalPrompt = IMPORT_PROMPT.replace("{{content}}", content);
@@ -534,7 +534,7 @@ Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings")
        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'cleanup_prompt'").get() as {value?: string} | undefined;
        const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_cleanup'").get() as {value?: string} | undefined;
        
-       const CLEANUP_PROMPT = promptRow?.value || 'Review and improve the following recipe. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount}), and "directions" (array of strings) keys. No extra text.\n\nRecipe: {{content}}';
+        const CLEANUP_PROMPT = promptRow?.value || 'Review and improve the following recipe. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.\n\nRecipe: {{content}}';
        const TIMEOUT = getOllamaTimeout('ollama_timeout_cleanup', 45000);
       
       let finalPrompt = CLEANUP_PROMPT.replace("{{content}}", JSON.stringify(recipe));
