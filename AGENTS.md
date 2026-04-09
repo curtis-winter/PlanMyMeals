@@ -32,6 +32,7 @@
 - Database initialization occurs in server startup
 
 ## Important Gotchas
+- **Always use `./deploy.sh`** to deploy changes - this runs tests, increments the build number, and deploys via docker compose
 - Ollama should be running (default: http://localhost:11434). Configure via app settings if using a different URL.
 - API endpoints under `/api/*` for meals, recipes, pantry, and AI functions
 - Vite handles frontend serving in dev, Express serves static files in prod

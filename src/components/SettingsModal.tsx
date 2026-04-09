@@ -140,7 +140,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <label className="block text-xs font-bold text-neutral-theme uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Sparkles className="w-3 h-3" /> Suggest Recipe Prompt Template
               </label>
-              <p className="text-[10px] text-neutral-theme mb-2">Use <code className="bg-background-theme px-1 rounded">{"{{content}}"}</code> for ingredients, <code className="bg-background-theme px-1 rounded">{"{{dietaryOptions}}"}</code> for preferences, and <code className="bg-background-theme px-1 rounded">{"{{additionalInstructions}}"}</code> for custom notes.</p>
+              <p className="text-[10px] text-neutral-theme mb-2">Use <code className="bg-background-theme px-1 rounded">{"{{pantryContext}}"}</code> for ingredients, <code className="bg-background-theme px-1 rounded">{"{{dietaryOptions}}"}</code> for preferences, <code className="bg-background-theme px-1 rounded">{"{{additionalInstructions}}"}</code> for custom notes, and <code className="bg-background-theme px-1 rounded">{"{{uniqueConstraint}}"}</code> for avoiding duplicate recipes.</p>
               <textarea
                 value={suggestPrompt}
                 onChange={(e) => setSuggestPrompt(e.target.value)}

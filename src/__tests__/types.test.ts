@@ -1,5 +1,26 @@
 import { describe, it, expect } from 'vitest';
-import { getWeekStart, DAYS_OF_WEEK, DayOfWeek } from '../types';
+import { getWeekStart, DAYS_OF_WEEK, DayOfWeek, Ingredient } from '../types';
+
+describe('Ingredient', () => {
+  it('should have preparation as optional field', () => {
+    const ingredient: Ingredient = {
+      id: '1',
+      name: 'onion',
+      amount: '1',
+      isAvailable: false,
+    };
+    expect(ingredient.preparation).toBeUndefined();
+
+    const ingredientWithPrep: Ingredient = {
+      id: '2',
+      name: 'onion',
+      amount: '1',
+      preparation: 'chopped',
+      isAvailable: false,
+    };
+    expect(ingredientWithPrep.preparation).toBe('chopped');
+  });
+});
 
 describe('getWeekStart', () => {
   const createDate = (year: number, month: number, day: number) => {

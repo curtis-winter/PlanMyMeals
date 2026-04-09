@@ -371,13 +371,40 @@ Output ONLY valid JSON array, no other text.`;
     }
   });
 
+  const INGREDIENTS_FORMAT = `\n\nOutput ONLY a JSON array of objects with "name", "amount", and "preparation" keys. Example: [{"name": "Chicken", "amount": "500g", "preparation": "cubed"}]. If an ingredient has no preparation method, use null for that field. No extra text.`;
+
+  const RECIPE_OUTPUT_FORMAT = `Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.`;
+  const RECIPES_OUTPUT_FORMAT = `Output ONLY a valid JSON array of objects. Each object MUST have:
+- "name": (string)
+- "yield": (string, e.g. "4 servings")
+- "ingredients": (array of {name, amount, preparation})
+- "directions": (array of strings)
+
+Example output:
+[
+  {
+    "name": "Recipe 1",
+    "yield": "4 servings",
+    "ingredients": [{"name": "Item", "amount": "1", "preparation": "chopped"}],
+    "directions": ["Step 1"]
+  },
+  {
+    "name": "Recipe 2",
+    "yield": "2 servings",
+    "ingredients": [{"name": "Item", "amount": "2", "preparation": null}],
+    "directions": ["Step 1"]
+  }
+]
+
+No extra text.`;
+
    app.post("/api/ai/generate-ingredients", async (req, res) => {
      const { recipeName, pantryContext } = req.body;
      try {
        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
        const TIMEOUT = getOllamaTimeout('ollama_timeout_ingredients', 30000);
 
-      let prompt = `List the ingredients for "${recipeName}" with their typical amounts. Output ONLY a JSON array of objects with "name", "amount", and "preparation" keys. Example: [{"name": "Chicken", "amount": "500g", "preparation": "cubed"}]. If an ingredient has no preparation method, use null for that field. No extra text.`;
+      let prompt = `List the ingredients for "${recipeName}" with their typical amounts.${INGREDIENTS_FORMAT}`;
       
       if (pantryContext) {
         prompt += `\n\nContext: The user currently has the following in their pantry/fridge/freezer: ${pantryContext}. Please prioritize suggesting ingredients they already have if they are relevant to the recipe.`;
@@ -410,58 +437,48 @@ Output ONLY valid JSON array, no other text.`;
      try {
        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
        const TIMEOUT = getOllamaTimeout('ollama_timeout_suggest', 60000);
-      
-      const count = parseInt(recipeCount) || 1;
-      let finalPrompt = '';
-      
-      const uniqueConstraint = plannedRecipes && plannedRecipes.length > 0 
-        ? `\n- DO NOT suggest recipes similar to these already planned: ${plannedRecipes.join(', ')}.`
-        : "";
+       
+       const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'suggest_prompt'").get() as {value?: string} | undefined;
+       const count = parseInt(recipeCount) || 1;
+       let finalPrompt = '';
+       
+       const uniqueConstraint = plannedRecipes && plannedRecipes.length > 0 
+         ? `\n- DO NOT suggest recipes similar to these already planned: ${plannedRecipes.join(', ')}.`
+         : "";
 
-      if (count > 1) {
-        finalPrompt = `Suggest ${count} unique and distinct recipes based on these ingredients I have: ${pantryContext || "nothing specific"}. 
+       if (count > 1) {
+         const basePrompt = promptRow?.value || `Suggest ${count} unique and distinct recipes based on these ingredients I have: {{pantryContext}}. 
 
-Dietary Preferences: ${dietaryOptions || "none"}
-Additional Instructions: ${additionalInstructions || "none"}
+Dietary Preferences: {{dietaryOptions}}
+Additional Instructions: {{additionalInstructions}}
 
 Guidelines:
 - Focus on simple recipes.
-- Each recipe should be unique and distinct.${uniqueConstraint}
+- Each recipe should be unique and distinct.{{uniqueConstraint}}
 - You do not need to use all provided ingredients.
 - Prioritize using the provided ingredients, but you can include common staples or other ingredients not listed if needed.
-${useDifferentProteins ? "- Minimize the overlap in meat protein used in the recipes." : ""}
+{{useDifferentProteins}}`;
 
-Output ONLY a valid JSON array of objects. Each object MUST have:
-- "name": (string)
-- "yield": (string, e.g. "4 servings")
-- "ingredients": (array of {name, amount, preparation})
-- "directions": (array of strings)
+         finalPrompt = basePrompt
+           .replace(/\{\{pantryContext\}\}/g, pantryContext || "nothing specific")
+           .replace(/\{\{dietaryOptions\}\}/g, dietaryOptions || "none")
+           .replace(/\{\{additionalInstructions\}\}/g, additionalInstructions || "none")
+           .replace(/\{\{uniqueConstraint\}\}/g, uniqueConstraint)
+           .replace(/\{\{useDifferentProteins\}\}/g, useDifferentProteins ? "- Minimize the overlap in meat protein used in the recipes." : "")
+           + "\n\n" + RECIPES_OUTPUT_FORMAT;
+       } else {
+         const basePrompt = promptRow?.value || `Suggest a recipe based on: {{pantryContext}}. 
 
-Example output:
-[
-  {
-    "name": "Recipe 1",
-    "yield": "4 servings",
-    "ingredients": [{"name": "Item", "amount": "1", "preparation": "chopped"}],
-    "directions": ["Step 1"]
-  },
-  {
-    "name": "Recipe 2",
-    "yield": "2 servings",
-    "ingredients": [{"name": "Item", "amount": "2", "preparation": null}],
-    "directions": ["Step 1"]
-  }
-]
+Dietary Preferences: {{dietaryOptions}}
+Additional Instructions: {{additionalInstructions}}{{uniqueConstraint}}`;
 
-No extra text.`;
-      } else {
-        finalPrompt = `Suggest a recipe based on: ${pantryContext || "nothing specific"}. 
-
-Dietary Preferences: ${dietaryOptions || "none"}
-Additional Instructions: ${additionalInstructions || "none"}${uniqueConstraint}
-
-Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.`;
-      }
+         finalPrompt = basePrompt
+           .replace(/\{\{pantryContext\}\}/g, pantryContext || "nothing specific")
+           .replace(/\{\{dietaryOptions\}\}/g, dietaryOptions || "none")
+           .replace(/\{\{additionalInstructions\}\}/g, additionalInstructions || "none")
+           .replace(/\{\{uniqueConstraint\}\}/g, uniqueConstraint)
+           + "\n\n" + RECIPE_OUTPUT_FORMAT;
+       }
       
       const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
         model: OLLAMA_MODEL,
@@ -500,7 +517,7 @@ Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings")
        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'import_prompt'").get() as {value?: string} | undefined;
        const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_import'").get() as {value?: string} | undefined;
        
-        const IMPORT_PROMPT = promptRow?.value || 'Extract the recipe from the following content. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.\n\nContent: {{content}}';
+        const IMPORT_PROMPT = (promptRow?.value || 'Extract the recipe from the following content. Content: {{content}}') + "\n\n" + RECIPE_OUTPUT_FORMAT;
        const TIMEOUT = getOllamaTimeout('ollama_timeout_import', 45000);
       
       const finalPrompt = IMPORT_PROMPT.replace("{{content}}", content);
@@ -527,20 +544,20 @@ Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings")
     }
   });
 
-   app.post("/api/ai/cleanup-recipe", async (req, res) => {
-     const { recipe, additionalInstructions } = req.body;
-     try {
-       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
-       const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'cleanup_prompt'").get() as {value?: string} | undefined;
-       const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_cleanup'").get() as {value?: string} | undefined;
+    app.post("/api/ai/cleanup-recipe", async (req, res) => {
+      const { recipe, additionalInstructions } = req.body;
+      try {
+        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'cleanup_prompt'").get() as {value?: string} | undefined;
+        const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_cleanup'").get() as {value?: string} | undefined;
+        
+        const CLEANUP_PROMPT = (promptRow?.value || 'Review and improve the following recipe. Recipe: {{content}}') + "\n\n" + RECIPE_OUTPUT_FORMAT;
+        const TIMEOUT = getOllamaTimeout('ollama_timeout_cleanup', 45000);
        
-        const CLEANUP_PROMPT = promptRow?.value || 'Review and improve the following recipe. Output ONLY a JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.\n\nRecipe: {{content}}';
-       const TIMEOUT = getOllamaTimeout('ollama_timeout_cleanup', 45000);
-      
-      let finalPrompt = CLEANUP_PROMPT.replace("{{content}}", JSON.stringify(recipe));
-      if (additionalInstructions) {
-        finalPrompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
-      }
+       let finalPrompt = CLEANUP_PROMPT.replace("{{content}}", JSON.stringify(recipe));
+       if (additionalInstructions) {
+         finalPrompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
+       }
       
       const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
         model: OLLAMA_MODEL,
