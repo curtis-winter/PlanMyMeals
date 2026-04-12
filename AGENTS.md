@@ -39,8 +39,36 @@
 - Database migrations are handled inline in server.ts startup
 - The "Scroll anchoring was disabled" warning in console is harmless - it's a browser optimization that doesn't affect functionality
 
+## Code Style
+- React components: functional components with hooks, TypeScript interfaces for props
+- State management: custom hooks (useMealPlan, useRecipes, usePantry, useAI, useSettings)
+- Styling: TailwindCSS utility classes, inline styles for dynamic values
+- UI patterns: Modal components for workflows, Card components for list items
+
+## Test Framework
+- **Framework**: Vitest (configured in vitest.config.ts)
+- **Location**: Tests in `src/__tests__/` directory
+- **Patterns**: Component tests with React Testing Library, hook tests with @testing-library/react-hooks
+
+## API Endpoints
+- `/api/meals` - Meal plan CRUD operations
+- `/api/recipes` - Recipe CRUD operations  
+- `/api/pantry` - Pantry inventory management
+- `/api/ai/*` - AI-powered features (suggestions, recipe generation)
+- `/api/settings` - Application settings (Ollama URL, preferences)
+
+## Environment
+- Server port: 3112
+- Database: SQLite at `data/meals.db`
+- Ollama: configurable URL via Settings modal (default: http://localhost:11434)
+
+## Troubleshooting
+- **Ollama connection failed**: Check Ollama is running, verify URL in Settings modal
+- **Database errors**: Ensure `data/` directory exists and is writable
+- **Port 3112 in use**: Kill existing process or check docker container
+- **Build failures**: Run `npm run lint` to check for type errors
+
 ## Docker Deployment
-- **Quick deploy**: `./deploy.sh` (auto-increments build number, displays it in terminal, and runs docker compose)
 - Manual deploy: `docker compose up -d --build`
 - Build image: `docker build -t mealplanner-app .`
 - Run container: `docker run -d --name mealplanner -p 3112:3112 mealplanner-app`
