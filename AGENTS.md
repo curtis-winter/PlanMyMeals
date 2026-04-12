@@ -31,8 +31,12 @@
 - TypeScript config: `tsconfig.json`
 - Database initialization occurs in server startup
 
+## Workflow
+1. Make code changes
+2. Run `npm run lint` and `npm test` to verify
+3. Run `./deploy.sh` to deploy - this runs tests, increments build number, and deploys via docker compose
+
 ## Important Gotchas
-- **Always use `./deploy.sh`** to deploy changes - this runs tests, increments the build number, and deploys via docker compose
 - Ollama should be running (default: http://localhost:11434). Configure via app settings if using a different URL.
 - API endpoints under `/api/*` for meals, recipes, pantry, and AI functions
 - Vite handles frontend serving in dev, Express serves static files in prod

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Package, Search, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Package, Search, Sparkles, Loader2, Smartphone } from 'lucide-react';
 import { PantryItem } from '../types';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 import { Modal } from './ui/Modal';
@@ -118,16 +118,25 @@ export const PantryManagerModal: React.FC<PantryManagerModalProps> = ({
       maxWidth="max-w-md"
       icon={<Package className="text-background-theme w-5 h-5" />}
       headerActions={
-        pantryItems.length > 0 && (
-          <button
-            onClick={handleOptimizeCategories}
-            disabled={isOptimizing}
-            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
-            title="Optimize Categories with AI"
+        <div className="flex items-center gap-2">
+          <a
+            href="/pantry"
+            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            title="Open Mobile View"
           >
-            {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-          </button>
-        )
+            <Smartphone className="w-5 h-5" />
+          </a>
+          {pantryItems.length > 0 && (
+            <button
+              onClick={handleOptimizeCategories}
+              disabled={isOptimizing}
+              className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+              title="Optimize Categories with AI"
+            >
+              {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+            </button>
+          )}
+        </div>
       }
       footer={
         <form onSubmit={handleAddItem} className="space-y-3">
