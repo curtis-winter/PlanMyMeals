@@ -88,6 +88,13 @@ db.exec(`
     name TEXT NOT NULL UNIQUE,
     category TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS ollama_servers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Migration: Add columns if they don't exist (for older DBs)
@@ -250,14 +257,50 @@ app.use(cors());
     res.json({ success: true });
   });
 
+  // Ollama Servers API (persistent, shared across all users)
+  app.get("/api/ollama-servers", (req, res) => {
+    const rows = db.prepare("SELECT * FROM ollama_servers ORDER BY created_at DESC").all();
+    res.json(rows);
+  });
+
+  app.post("/api/ollama-servers", (req, res) => {
+    const { name, url } = req.body;
+    if (!name || !url) {
+      res.status(400).json({ error: "Name and URL are required" });
+      return;
+    }
+    const stmt = db.prepare("INSERT INTO ollama_servers (name, url) VALUES (?, ?)");
+    const result = stmt.run(name, url);
+    res.json({ success: true, id: result.lastInsertRowid });
+  });
+
+  app.delete("/api/ollama-servers/:id", (req, res) => {
+    const { id } = req.params;
+    db.prepare("DELETE FROM ollama_servers WHERE id = ?").run(id);
+    res.json({ success: true });
+  });
+
   app.get("/api/ai/test-connection", async (req, res) => {
-    const url = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as any;
+    const urlParam = req.query.url as string;
+    const savedUrl = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as { value: string } | undefined;
+    
+    let requestUrl = urlParam || savedUrl?.value || '';
+    
+    if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
+      requestUrl = requestUrl.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal');
+    }
+    
+    if (!requestUrl || !requestUrl.startsWith('http')) {
+      res.status(400).json({ error: "Invalid URL" });
+      return;
+    }
+    
     try {
-      const response = await axios.get(`${url.value}/api/tags`);
+      const response = await axios.get(`${requestUrl}/api/tags`);
       res.json({ success: true, models: response.data.models });
-    } catch (err) {
-      console.error("Ollama connection test failed:", err);
-      res.status(500).json({ error: "Could not connect to Ollama" });
+    } catch (err: any) {
+      console.error("Ollama connection test failed:", err.message);
+      res.status(500).json({ error: `Could not connect to Ollama: ${err.message}` });
     }
   });
 

@@ -1,6 +1,7 @@
-import React from 'react';
-import { Settings, Moon, Sun, Globe, Loader2, CheckCircle2, AlertCircle, Cpu, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, Moon, Sun, Globe, Loader2, CheckCircle2, AlertCircle, Cpu, Sparkles, Plus, X, Server, Trash2 } from 'lucide-react';
 import { Modal } from './ui/Modal';
+import { OllamaServer } from '../hooks/useOllamaServers';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,9 +11,14 @@ interface SettingsModalProps {
   ollamaSettings: { url: string; model: string };
   setOllamaSettings: React.Dispatch<React.SetStateAction<{ url: string; model: string }>>;
   testStatus: 'idle' | 'testing' | 'success' | 'error';
-  testConnection: () => void;
+  testConnection: (url?: string) => void;
   availableModels: string[];
   saveSettings: () => Promise<boolean>;
+  servers: OllamaServer[];
+  selectedServer: string;
+  onSelectServer: (url: string) => void;
+  onAddServer: (name: string, url: string) => Promise<number | null>;
+  onRemoveServer: (id: number) => void;
   importPrompt: string;
   setImportPrompt: (prompt: string) => void;
   suggestPrompt: string;
@@ -46,6 +52,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   testConnection,
   availableModels,
   saveSettings,
+  servers,
+  selectedServer,
+  onSelectServer,
+  onAddServer,
+  onRemoveServer,
   importPrompt,
   setImportPrompt,
   suggestPrompt,
@@ -256,39 +267,61 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <h3 className="text-sm font-black text-primary uppercase tracking-widest border-b border-border-theme pb-2">AI Settings</h3>
           
           <div className="space-y-4">
+            {/* Ollama Servers */}
             <div>
               <label className="block text-xs font-bold text-neutral-theme uppercase tracking-wider mb-2 flex items-center gap-2">
-                <Globe className="w-3 h-3" /> Ollama Address
+                <Server className="w-3 h-3" /> Ollama Servers
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={ollamaSettings.url}
-                  onChange={(e) => setOllamaSettings(prev => ({ ...prev, url: e.target.value }))}
-                  placeholder="http://localhost:11434"
-                  className="flex-1 px-4 py-3 rounded-xl bg-background-theme border-transparent focus:bg-surface focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-primary"
-                />
-                <button
-                  onClick={testConnection}
-                  disabled={testStatus === 'testing'}
-                  className={`px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border-2 shrink-0 ${
-                    testStatus === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
-                    testStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
-                    'bg-background-theme border-border-theme text-neutral-theme hover:bg-surface'
-                  }`}
-                  title="Test Connection"
-                >
-                  {testStatus === 'testing' ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : testStatus === 'success' ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : testStatus === 'error' ? (
-                    <AlertCircle className="w-5 h-5" />
-                  ) : (
-                    <Globe className="w-5 h-5" />
-                  )}
-                </button>
+              
+              {/* Server List */}
+              <div className="space-y-2 mb-3">
+                {servers.map((server) => (
+                  <div 
+                    key={server.id}
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                      selectedServer === server.url 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-border-theme hover:border-primary/50'
+                    }`}
+                    onClick={() => {
+                      onSelectServer(server.url);
+                      testConnection(server.url);
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Server className="w-4 h-4 text-neutral-theme" />
+                      <div>
+                        <div className="text-sm font-medium text-primary">{server.name}</div>
+                        <div className="text-xs text-neutral-theme">{server.url}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveServer(server.id);
+                      }}
+                      className="p-1 text-neutral-theme hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
+              
+              {/* Add New Server */}
+              <AddServerForm onAdd={onAddServer} onSelect={onSelectServer} onTest={testConnection} />
+            </div>
+
+            {/* Connection Status */}
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-neutral-theme">Status:</span>
+              {testStatus === 'testing' && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+              {testStatus === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+              {testStatus === 'error' && <AlertCircle className="w-4 h-4 text-red-500" />}
+              {testStatus === 'idle' && <span className="text-neutral-theme">Not tested</span>}
+              {testStatus === 'testing' && <span className="text-primary">Testing...</span>}
+              {testStatus === 'success' && <span className="text-green-500">Connected</span>}
+              {testStatus === 'error' && <span className="text-red-500">Failed</span>}
             </div>
 
             <div>
@@ -337,5 +370,56 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </section>
       </div>
     </Modal>
+  );
+};
+
+const AddServerForm: React.FC<{
+  onAdd: (name: string, url: string) => Promise<number | null>;
+  onSelect: (url: string) => void;
+  onTest: (url: string) => void;
+}> = ({ onAdd, onSelect, onTest }) => {
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAdd = async () => {
+    if (!name.trim() || !url.trim()) return;
+    setIsAdding(true);
+    const id = await onAdd(name.trim(), url.trim());
+    if (id) {
+      onSelect(url.trim());
+      onTest(url.trim());
+      setName('');
+      setUrl('');
+    }
+    setIsAdding(false);
+  };
+
+  return (
+    <div className="flex gap-2 items-end">
+      <div className="flex-1 space-y-1">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Server name"
+          className="w-full px-3 py-2 rounded-lg bg-background-theme border border-border-theme focus:border-primary/30 outline-none text-sm text-primary"
+        />
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="http://192.168.1.100:11434"
+          className="w-full px-3 py-2 rounded-lg bg-background-theme border border-border-theme focus:border-primary/30 outline-none text-sm text-primary"
+        />
+      </div>
+      <button
+        onClick={handleAdd}
+        disabled={isAdding || !name.trim() || !url.trim()}
+        className="p-2 bg-primary text-background-theme rounded-lg font-bold hover:bg-secondary hover:text-primary transition-all disabled:opacity-50"
+      >
+        <Plus className="w-5 h-5" />
+      </button>
+    </div>
   );
 };

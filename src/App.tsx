@@ -25,6 +25,7 @@ import { usePantry } from './hooks/usePantry';
 import { useMealPlan } from './hooks/useMealPlan';
 import { useRecipes } from './hooks/useRecipes';
 import { useSettings } from './hooks/useSettings';
+import { useOllamaServers } from './hooks/useOllamaServers';
 import { useAI } from './hooks/useAI';
 import { useBuildInfo } from './hooks/useBuildInfo';
 
@@ -77,6 +78,14 @@ export default function App() {
     saveSettings,
     testConnection
   } = useSettings();
+
+  const {
+    servers,
+    selectedServer,
+    addServer,
+    removeServer,
+    selectServer
+  } = useOllamaServers();
 
   const {
     plan,
@@ -534,6 +543,11 @@ saveToRecipeBook={saveToRecipeBook}
         testConnection={testConnection}
         availableModels={availableModels}
         saveSettings={saveSettings}
+        servers={servers}
+        selectedServer={selectedServer}
+        onSelectServer={selectServer}
+        onAddServer={addServer}
+        onRemoveServer={removeServer}
         importPrompt={importPrompt}
         setImportPrompt={setImportPrompt}
         suggestPrompt={suggestPrompt}

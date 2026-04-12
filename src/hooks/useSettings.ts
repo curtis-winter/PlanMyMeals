@@ -36,8 +36,11 @@ export function useSettings() {
       try {
         const res = await fetch('/api/settings');
         const data = await res.json();
+        
+        const selectedUrl = localStorage.getItem('selectedOllamaServer') || data.ollama_url || '';
+        
         setOllamaSettings({
-          url: data.ollama_url || '',
+          url: selectedUrl,
           model: data.ollama_model || ''
         });
         setImportPrompt(data.import_prompt || '');
@@ -84,10 +87,11 @@ export function useSettings() {
     }
   };
 
-  const testConnection = async () => {
+  const testConnection = async (urlToTest?: string) => {
     setTestStatus('testing');
+    const url = urlToTest || ollamaSettings.url;
     try {
-      const res = await fetch('/api/ai/test-connection');
+      const res = await fetch(`/api/ai/test-connection?url=${encodeURIComponent(url)}`);
       const data = await res.json();
       if (res.ok) {
         setTestStatus('success');
@@ -97,9 +101,11 @@ export function useSettings() {
         }
       } else {
         setTestStatus('error');
+        setAvailableModels([]);
       }
     } catch (err) {
       setTestStatus('error');
+      setAvailableModels([]);
     }
   };
 
