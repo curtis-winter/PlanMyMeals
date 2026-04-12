@@ -1,0 +1,1357 @@
+# Common Grocery Items - used for autocomplete suggestions
+# This file is bundled into the Docker image for the autocomplete feature
+
+# Produce - Fruits
+apple
+apple honeycrisp
+apple fuji
+apple gala
+apple granny smith
+apple red delicious
+apple jonagold
+apple braeburn
+apple cortland
+apple mcintosh
+banana
+orange
+orange navel
+orange blood
+orange cara cara
+lemon
+lime
+grapefruit
+grapefruit ruby red
+grapefruit white
+tangerine
+mandarin
+clementine
+kumquat
+persimmon
+pomegranate
+fig
+date
+grape
+grape green
+grape red
+grape purple
+grape black
+strawberry
+blueberry
+raspberry
+blackberry
+cranberry
+cherry
+cherry bing
+cherry rainier
+cherry maraschino
+watermelon
+cantaloupe
+honeydew
+pineapple
+mango
+mango alphonso
+mango haden
+avocado
+papaya
+kiwi
+passion fruit
+dragon fruit
+lychee
+guava
+star fruit
+coconut
+
+# Produce - Vegetables
+tomato
+tomato roma
+tomato beefsteak
+tomato cherry
+tomato grape
+tomato heirloom
+tomato green
+tomato sun dried
+cherry tomato
+grape tomato
+cucumber
+cucumber english
+cucumber pickling
+zucchini
+yellow squash
+butternut squash
+acorn squash
+spaghetti squash
+pumpkin
+delicata squash
+kabocha squash
+butternut squash
+sweet dumpling squash
+pattypan squash
+crookneck squash
+bell pepper
+bell pepper green
+bell pepper red
+bell pepper yellow
+bell pepper orange
+bell pepper banana
+jalapeño
+habanero
+serrano
+poblano
+anaheim
+cayenne
+thai chili
+ghost pepper
+onion
+red onion
+white onion
+yellow onion
+sweet onion
+green onion
+scallion
+shallot
+leek
+garlic
+garlic roasted
+garlic minced
+ginger
+carrot
+baby carrot
+celery
+celery root
+broccoli
+broccoli crowns
+broccoli rabe
+cauliflower
+brussels sprout
+cabbage
+cabbage napa
+cabbage red
+cabbage savoy
+kale
+kale curly
+kale lacinato
+kale baby
+spinach
+baby spinach
+spinach bunch
+lettuce
+romaine
+romaine hearts
+iceberg
+arugula
+mixed greens
+spring mix
+mesclun
+radish
+daikon
+beet
+beet golden
+beet chioggia
+turnip
+parsnip
+rutabaga
+potato
+potato russet
+potato red
+potato white
+potato fingerling
+sweet potato
+sweet potato orange
+sweet potato white
+yams
+mushroom
+mushroom button
+mushroom cremini
+mushroom portobello
+mushroom shiitake
+mushroom oyster
+mushroom king oyster
+mushroom enoki
+mushroom maitake
+corn
+corn on the cob
+corn kernels
+peas
+peas snow peas
+peas snap peas
+peas black eyed
+peas split
+green beans
+green beans french
+green beans wax
+asparagus
+asparagus white
+artichoke
+eggplant
+fennel
+endive
+escarole
+chicory
+watercress
+dandelion
+collard greens
+mustard greens
+swiss chard
+beet greens
+
+# Dairy & Eggs
+milk
+whole milk
+skim milk
+2 percent milk
+1 percent milk
+oat milk
+almond milk
+soy milk
+coconut milk
+cashew milk
+hemp milk
+goat milk
+lactose free milk
+flavored milk
+chocolate milk
+strawberry milk
+heavy cream
+heavy whipping cream
+half and half
+light cream
+coffee cream
+cream cheese
+cream cheese regular
+cream cheese whipped
+cream cheese neufchatel
+sour cream
+light sour cream
+greek yogurt
+greek yogurt plain
+greek yogurt vanilla
+greek yogurt honey
+yogurt
+yogurt plain
+yogurt vanilla
+yogurt fruit
+yogurt greek
+yogurt nonfat
+yogurt low fat
+butter
+unsalted butter
+salted butter
+clarified butter
+ghee
+margarine
+eggs
+egg whites
+egg whites liquid
+egg yolks
+egg substitute
+organic eggs
+free range eggs
+cheddar cheese
+cheddar sharp
+cheddar mild
+mozzarella
+mozzarella fresh
+mozzarella shredded
+mozzarella part skim
+parmesan
+parmesan reggiano
+parmesan grated
+parmesan shaved
+feta
+feta crumbles
+goat cheese
+goat cheese log
+swiss cheese
+swiss cheese sliced
+american cheese
+american cheese slices
+pepper jack
+colby
+colby jack
+monterey jack
+muenster
+provolone
+gorgonzola
+blue cheese
+ Roquefort
+stilton
+cream cheese
+ricotta
+ricotta whole milk
+ricotta part skim
+brie
+brie wedge
+camembert
+gouda
+aged gouda
+smoked gouda
+manchego
+pecorino
+pecorino romano
+gruyere
+emmental
+havarti
+fontina
+addagio
+cheddar cheese
+muenster cheese
+
+# Meat & Poultry
+chicken
+chicken breast
+chicken breast bone in
+chicken breast boneless
+chicken thigh
+chicken thigh bone in
+chicken thigh boneless
+chicken leg
+chicken leg quarter
+chicken wing
+chicken wingette
+chicken drumstick
+whole chicken
+chicken tenders
+chicken cutlets
+ground chicken
+chicken sausage
+turkey
+turkey breast
+turkey breast bone in
+turkey breast boneless
+turkey thigh
+ground turkey
+turkey sausage
+turkey bacon
+ground turkey breast
+duck
+duck breast
+duck leg
+cornish hen
+beef
+beef tenderloin
+beef filet mignon
+beef ribeye
+beef ribeye steak
+beef sirloin
+beef sirloin steak
+beef top sirloin
+beef bottom sirloin
+beef flank steak
+beef skirt steak
+beef New York strip
+beef porterhouse
+beef t bone
+ground beef
+ground beef lean
+ground beef regular
+ground beef extra lean
+beef chuck
+beef chuck roast
+beef brisket
+beef short ribs
+beef tri tip
+beef rump roast
+beef eye of round
+beef stew meat
+beef cubes
+beef sausage
+beef bacon
+pork
+pork chop
+pork chop bone in
+pork chop boneless
+pork loin
+pork loin roast
+pork loin chops
+pork tenderloin
+pork tenderloin medallions
+pork rib rack
+pork ribs
+pork spare ribs
+pork baby back ribs
+ground pork
+pork sausage
+pork breakfast sausage
+pork italian sausage
+pork chorizo
+bacon
+bacon regular
+bacon thick cut
+bacon turkey
+bacon beef
+pancetta
+prosciutto
+prosciutto di parma
+ham
+ham sliced
+ham whole
+ham shank
+ham butt
+ham spiral cut
+lamb
+lamb chop
+lamb loin chop
+lamb rack
+lamb leg
+lamb leg roast
+lamb shank
+lamb shoulder
+ground lamb
+veal
+veal cutlet
+veal chop
+veal shank
+veal stew meat
+venison
+bison
+bison steak
+bison ground
+elk
+wild boar
+
+# Seafood - Fish
+salmon
+salmon atlantic
+salmon sockeye
+salmon king
+salmon coho
+salmon smoked
+salmon lox
+salmon gravlax
+tilapia
+cod
+cod pacific
+cod atlantic
+halibut
+halibut pacific
+tuna
+tuna yellowfin
+tuna bigeye
+tuna albacore
+tuna canned
+tuna fresh
+trout
+trout rainbow
+trout brook
+bass
+bass striped
+bass sea
+snapper
+red snapper
+yellowtail snapper
+mahi mahi
+mahi mahi fillet
+swordfish
+swordfish steak
+marlin
+wahoo
+halibut
+flounder
+sole
+sole dover
+sole lemon
+perch
+catfish
+carp
+barramundi
+cod
+black cod
+sablefish
+
+# Seafood - Shellfish
+shrimp
+shrimp large
+shrimp medium
+shrimp small
+shrimp jumbo
+shrimp wild caught
+shrimp farmed
+shrimp peeled
+shrimp tail on
+shrimp shell on
+prawns
+king prawns
+tiger prawns
+crab
+crab lump
+crab meat
+crab blue
+crab dungeness
+crab king
+crab legs
+lobster
+lobster tail
+lobster claw
+lobster meat
+lobster whole
+scallops
+scallops sea
+scallops bay
+scallops diver
+mussels
+mussels prince
+mussels cultivated
+clams
+clams littleneck
+clams cherrystone
+clams quahog
+oysters
+oysters pacific
+oysters atlantic
+oysters kumamoto
+oysters fried
+calamari
+squid
+squid whole
+squid tubes
+octopus
+octopus spanish
+octopus baby
+crawfish
+crawfish tails
+langoustine
+
+# Bakery
+bread
+bread white
+bread whole wheat
+bread multi grain
+bread sourdough
+bread rye
+bread pumpernickel
+bread dutch oven
+bread french
+bread italian
+bread ciabatta
+bread focaccia
+bread naan
+bread pita
+bread pocket pita
+bread flour tortilla
+bread corn tortilla
+bread wrap
+bread lavash
+bread flatbread
+bread paratha
+bread chapati
+bread naan
+bread garlic naan
+bagel
+bagel plain
+bagel sesame
+bagel poppy
+bagel everything
+bagel cinnamon raisin
+bagel whole wheat
+croissant
+croissant plain
+croissant chocolate
+croissant almond
+muffin
+muffin blueberry
+muffin bran
+muffin chocolate
+muffin corn
+donut
+donut glazed
+donut chocolate
+donut jelly
+donut cruller
+cake
+cake chocolate
+cake vanilla
+cake yellow
+cake marble
+cake red velvet
+cake carrot
+cake spice
+cake lemon
+cake pound
+brownie
+brownie fudge
+brownie walnut
+brownie blonde
+cookie
+cookie chocolate chip
+cookie oatmeal raisin
+cookie sugar
+cookie peanut butter
+cookie snickerdoodle
+cookie macadamia
+pie
+pie apple
+pie cherry
+pie pumpkin
+pie pecan
+pie key lime
+pie lemon meringue
+bread crumbs
+panko
+bread crumbs italian
+croutons
+tortilla chips
+potato chips
+
+# Canned & Jarred - Tomatoes
+tomato sauce
+tomato paste
+tomato puree
+diced tomatoes
+diced tomatoes fire roasted
+crushed tomatoes
+whole tomatoes
+tomatoes stewed
+tomatoes rotel
+marinara
+pizza sauce
+spaghetti sauce
+salsa
+salsa verde
+salsa roja
+salsa habanero
+salsa pico de gallo
+
+# Canned & Jarred - Beans
+beans
+black beans
+black beans canned
+kidney beans
+kidney beans dark
+kidney beans light
+pinto beans
+pinto beans canned
+cannellini beans
+white beans
+navy beans
+great northern beans
+borlotti beans
+adzuki beans
+black eyed peas
+lima beans
+butter beans
+flageolet beans
+
+# Canned & Jarred - Other
+chickpeas
+chickpeas garbanzo
+lentils
+lentils green
+lentils red
+lentils brown
+lentils french
+split peas
+split peas yellow
+split peas green
+corn
+corn kernel
+corn cream style
+peas
+peas sweet
+artichoke hearts
+artichoke quarters
+olives
+olives green
+olives black
+olives kalamata
+olives manzanilla
+olives stuffed
+olives pimento
+capers
+water chestnuts
+bamboo shoots
+bean sprouts
+roasted red peppers
+pickles
+pickles dill
+pickles sweet
+pickles bread and butter
+relish
+horseradish
+horseradish prepared
+wasabi
+
+# Canned & Jarred - Seafood
+tuna
+tuna canned in water
+tuna canned in oil
+tuna albacore
+tuna chunk light
+salmon
+salmon canned
+salmon pink
+sardines
+sardines in tomato sauce
+sardines in oil
+anchovies
+anchovy paste
+clam juice
+oyster sauce
+
+# Canned & Jarred - Broths
+chicken broth
+chicken stock
+chicken base
+beef broth
+beef stock
+beef base
+vegetable broth
+vegetable stock
+fish stock
+dashi
+stock
+
+# Canned & Jarred - Dairy
+evaporated milk
+condensed milk
+coconut cream
+coconut milk
+cream of coconut
+
+# Dry Goods - Rice & Grains
+rice
+white rice
+long grain rice
+medium grain rice
+short grain rice
+brown rice
+jasmine rice
+basmati rice
+wild rice
+arborio rice
+sushi rice
+black rice
+red rice
+rice cakes
+couscous
+couscous israeli
+couscous moroccan
+barley
+barley pearl
+farro
+farro perlato
+emmer
+spelt
+oats
+oatmeal
+oatmeal rolled
+oatmeal steel cut
+oatmeal instant
+quinoa
+quinoa white
+quinoa red
+quinoa black
+millet
+buckwheat
+kasha
+wheat berries
+
+# Dry Goods - Pasta
+pasta
+spaghetti
+penne
+penne rigate
+fettuccine
+fettuccine egg
+linguine
+linguine fine
+rigatoni
+macaroni
+elbow macaroni
+shells
+shells large
+shells small
+farfalle
+bowtie
+rotini
+fusilli
+cavatappi
+orzo
+orzo pasta
+radiatore
+campanelle
+cappelletti
+tortellini
+ravioli
+lasagna
+lasagna sheets
+manicotti
+cannelloni
+gnocchi
+egg noodles
+udon
+udon fresh
+udon dried
+soba
+soba buckwheat
+ramen
+ramen noodles
+rice noodles
+rice vermicelli
+glass noodles
+cellophane noodles
+mung bean noodles
+
+# Dry Goods - Flour & Baking
+flour
+all purpose flour
+bread flour
+whole wheat flour
+cake flour
+pastry flour
+self rising flour
+gluten free flour
+almond flour
+coconut flour
+oat flour
+tapioca flour
+arrowroot flour
+cornmeal
+polenta
+yellow cornmeal
+white cornmeal
+cornstarch
+cornstarch arrowroot
+baking powder
+baking soda
+yeast
+yeast active dry
+yeast instant
+yeast fresh
+cream of tartar
+gelatin
+pectin
+
+# Dry Goods - Sugars & Sweeteners
+sugar
+white sugar
+granulated sugar
+brown sugar
+brown sugar light
+brown sugar dark
+powdered sugar
+confectioners sugar
+turbinado
+demerara
+raw sugar
+honey
+honey raw
+honey clover
+honey orange blossom
+maple syrup
+maple syrup pure
+molasses
+corn syrup
+agave nectar
+stevia
+erythritol
+xylitol
+
+# Condiments - Sauces
+ketchup
+mustard
+yellow mustard
+dijon mustard
+spicy brown mustard
+whole grain mustard
+honey mustard
+mustard seeds
+mayonnaise
+mayonnaise light
+mayonnaise olive oil
+relish
+sweet relish
+chili sauce
+hot sauce
+tabasco
+sriracha
+cholula
+franks
+ Valentina
+chili garlic sauce
+duck sauce
+teriyaki sauce
+teriyaki sauce regular
+teriyaki sauce low sodium
+bbq sauce
+barbecue sauce
+bbq sauce smoky
+bbq sauce sweet
+hoisin sauce
+oyster sauce
+fish sauce
+worcestershire sauce
+steak sauce
+a1 sauce
+gravy
+gravy mix
+enchilada sauce
+salsa verde
+mole sauce
+alfredo sauce
+pesto
+pesto basil
+pesto sun dried tomato
+marinade
+italian dressing
+ranch dressing
+caesar dressing
+thousand island
+blue cheese dressing
+vinaigrette
+balsamic vinaigrette
+italian vinaigrette
+
+# Condiments - Oils & Vinegars
+olive oil
+extra virgin olive oil
+light olive oil
+vegetable oil
+canola oil
+coconut oil
+sesame oil
+toasted sesame oil
+avocado oil
+grape seed oil
+sunflower oil
+safflower oil
+peanut oil
+walnut oil
+flaxseed oil
+mango butter
+vinegar
+red wine vinegar
+white wine vinegar
+apple cider vinegar
+balsamic vinegar
+balsamic glaze
+rice vinegar
+rice wine vinegar
+sherry vinegar
+champagne vinegar
+distilled white vinegar
+coconut vinegar
+
+# Spices - Salt & Pepper
+salt
+table salt
+sea salt
+sea salt coarse
+sea salt fine
+kosher salt
+pickling salt
+salt substitute
+pepper
+black pepper
+black pepper ground
+white pepper
+peppercorn
+pepper corns mixed
+red pepper flakes
+crushed red pepper
+red chili flakes
+
+# Spices - Heat & Smoke
+cayenne
+cayenne pepper
+paprika
+paprika sweet
+paprika smoked
+paprika hungarian
+chili powder
+chili powder mild
+chili powder hot
+chipotle
+chipotle powder
+chipotle in adobo
+ancho
+ancho chili
+pasilla
+guajillo
+new mexico chili
+crushed red pepper
+
+# Spices - Warm
+cumin
+cumin ground
+cumin seeds
+coriander
+coriander ground
+coriander seeds
+turmeric
+turmeric ground
+curry powder
+curry powder mild
+curry powder hot
+garam masala
+cinnamon
+cinnamon stick
+cinnamon ground
+cloves
+cloves ground
+whole cloves
+nutmeg
+nutmeg whole
+nutmeg ground
+allspice
+allspice ground
+cardamom
+cardamom ground
+cardamom pods
+ginger
+ginger ground
+ginger fresh
+garlic powder
+onion powder
+
+# Spices - Herbs
+oregano
+oregano dried
+oregano fresh
+basil
+basil dried
+basil fresh
+basil Thai
+thyme
+thyme fresh
+thyme dried
+rosemary
+rosemary fresh
+rosemary dried
+dill
+dill weed
+dill fresh
+dill seeds
+parsley
+parsley fresh
+parsley dried
+parsley italian
+cilantro
+cilantro fresh
+cilantro dried
+coriander seeds
+mint
+mint fresh
+mint dried
+spearmint
+sage
+sage fresh
+sage dried
+tarragon
+lavender
+lemongrass
+bay leaves
+bay leaves dried
+herbes de provence
+italian seasoning
+everything bagel seasoning
+
+# Frozen - Vegetables
+frozen vegetables
+frozen peas
+frozen corn
+frozen spinach
+frozen broccoli
+frozen mixed vegetables
+frozen stir fry vegetables
+frozen brussels sprouts
+frozen green beans
+frozen edamame
+frozen okra
+frozen artichoke hearts
+
+# Frozen - Fruits
+frozen berries
+frozen strawberries
+frozen blueberries
+frozen raspberries
+frozen blackberries
+frozen mixed berries
+frozen mango
+frozen pineapple
+frozen peach
+frozen fruit mix
+
+# Frozen - Meals
+frozen pizza
+frozen pizza pepperoni
+frozen pizza cheese
+frozen pizza thin crust
+frozen pizza deep dish
+frozen dinners
+frozen lasagna
+frozen mac and cheese
+frozen chicken tenders
+frozen chicken nuggets
+frozen fish sticks
+frozen fish fillets
+frozen shrimp
+frozen potpie
+frozen burrito
+frozen egg roll
+frozen dumplings
+
+# Frozen - Bakery
+frozen waffles
+frozen pancakes
+frozen french toast
+frozen croissants
+frozen biscuits
+frozen bread dough
+
+# Frozen - Desserts
+ice cream
+ice cream vanilla
+ice cream chocolate
+ice cream strawberry
+ice cream mint chip
+ice cream cookie dough
+ice cream rocky road
+sorbet
+sherbet
+frozen yogurt
+gelato
+
+# Beverages - Coffee
+coffee
+coffee ground
+coffee whole bean
+coffee espresso
+coffee dark roast
+coffee medium roast
+coffee light roast
+coffee decaf
+coffee instant
+coffee pods
+coffee k cups
+coffee filters
+espresso
+espresso ground
+espresso beans
+
+# Beverages - Tea
+tea
+black tea
+green tea
+herbal tea
+chai tea
+oolong tea
+white tea
+matcha
+mate
+tea bags
+tea loose leaf
+tea filters
+
+# Beverages - Juices
+juice
+orange juice
+orange juice fresh
+orange juice pulp free
+apple juice
+grape juice
+cranberry juice
+cranberry juice cocktail
+grapefruit juice
+pineapple juice
+tomato juice
+vegetable juice
+blended juice
+lemon juice
+lime juice
+
+# Beverages - Water & Soda
+water
+bottled water
+spring water
+sparkling water
+club soda
+tonic water
+soda
+cola
+diet cola
+coke
+diet coke
+pepsi
+diet pepsi
+mountain dew
+dr pepper
+7 up
+sprite
+ginger ale
+root beer
+
+# Beverages - Alcohol
+wine
+red wine
+white wine
+rosé wine
+beer
+light beer
+ipa
+stout
+lager
+spirit
+vodka
+rum
+whiskey
+tequila
+gin
+cocktail mixer
+
+# Snacks - Chips
+chips
+potato chips
+potato chips salted
+potato chips ruffled
+tortilla chips
+tortilla chips lime
+tortilla chips restaurant style
+pretzels
+pretzels twisted
+pretzels sticks
+pretzels Snyder
+veggie chips
+plantain chips
+tar chips
+
+# Snacks - Nuts
+nuts
+almonds
+almonds raw
+almonds roasted
+almonds salted
+almonds smoked
+almonds sliced
+almonds slivered
+cashews
+cashews raw
+cashews roasted
+cashews salted
+cashews honey roasted
+peanuts
+peanuts raw
+peanuts roasted
+peanuts salted
+peanuts honey roasted
+walnuts
+walnuts raw
+walnuts roasted
+walnuts pieces
+pecans
+pecans raw
+pecans roasted
+pecans pieces
+pistachios
+pistachios raw
+pistachios roasted
+pistachios salted
+macadamia
+macadamia raw
+macadamia roasted
+mixed nuts
+mixed nuts raw
+mixed nuts roasted
+mixed nuts salted
+
+# Snacks - Seeds
+seeds
+sunflower seeds
+sunflower seeds hulled
+pumpkin seeds
+pumpkin seeds pepitas
+chia seeds
+flax seeds
+flax meal
+hemp seeds
+sesame seeds
+toasted sesame seeds
+
+# Snacks - Other
+popcorn
+popcorn kernels
+popcorn microwave
+popcorn butter
+crackers
+crackers saltine
+crackers oyster
+crackers ritz
+crackers wheat
+crackers graham
+rice cakes
+rice cake plain
+rice cake salted
+granola bars
+granola bar chocolate chip
+granola bar oatmeal
+protein bars
+protein bar chocolate
+protein bar peanut butter
+dried fruit
+dried fruit mix
+raisins
+raisins golden
+dried cranberries
+dried apricots
+dried mango
+dried banana chips
+dried coconut
+dates
+prunes
+fig dried
+
+# Breakfast - Cereal
+cereal
+cereal corn flakes
+cereal bran
+cereal rice
+cereal wheat
+cereal granola
+cereal oatmeal
+cereal grits
+cereal cream of wheat
+cereal farina
+
+# Breakfast - Mixes
+pancake mix
+pancake mix buttermilk
+waffle mix
+waffle mix belgian
+french toast mix
+breakfast burrito
+breakfast sandwich
+
+# Breakfast - Syrups
+syrup
+syrup maple
+syrup pancake
+syrup table
+syrup corn
+syrup chocolate
+syrup strawberry
+
+# Breakfast - Proteins
+breakfast sausage
+breakfast sausage links
+breakfast sausage patties
+bacon
+bacon breakfast
+canadian bacon
+ham
+ham sliced
+prosciutto
+
+# Breakfast - Other
+eggs
+eggs scrambled
+eggs boiled
+omelet
+eggs benedict
+french toast
+oatmeal
+oatmeal hot
+yogurt parfait
+fruit
+fruit fresh
+smoothie
+smoothie mix
+protein powder

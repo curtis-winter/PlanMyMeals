@@ -14,6 +14,20 @@ const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 const db = new Database(path.join(dataDir, "meals.db"));
 
+// Load common grocery items into memory
+let commonGroceryItems: string[] = [];
+const commonItemsPath = path.join(__dirname, "common-grocery-items.txt");
+console.log('[init] loading common items from:', commonItemsPath, 'exists:', fs.existsSync(commonItemsPath));
+if (fs.existsSync(commonItemsPath)) {
+  const content = fs.readFileSync(commonItemsPath, 'utf-8');
+  console.log('[init] file content length:', content.length);
+  commonGroceryItems = content
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#'));
+  console.log('[init] loaded common items:', commonGroceryItems.length, 'items:', commonGroceryItems.slice(0, 10));
+}
+
 /**
  * Helper function to get Ollama configuration from settings
  * @returns {{url: string, model: string}} Ollama configuration with url and model
@@ -51,7 +65,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS recipes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
     ingredients TEXT,
     directions TEXT,
     rating INTEGER DEFAULT 0,
@@ -64,6 +78,12 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS pantry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    category TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS shopping_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     category TEXT
@@ -90,6 +110,12 @@ try {
 }
 
 try {
+  db.exec("ALTER TABLE shopping_history ADD COLUMN category TEXT;");
+} catch (e) {
+  // Column may not exist yet or already exists
+}
+
+try {
   db.exec("ALTER TABLE recipes ADD COLUMN tags TEXT;");
 } catch (e) {
   // Column likely already exists
@@ -104,34 +130,47 @@ try {
   // Ignore migration errors
 }
 
+// Sync pantry items to shopping history on startup
+try {
+  const pantryItems = db.prepare("SELECT name, category FROM pantry").all() as { name: string; category: string }[];
+  for (const item of pantryItems) {
+    db.prepare("INSERT OR IGNORE INTO shopping_history (name, category) VALUES (?, ?)").run(item.name, item.category);
+  }
+  console.log(`Synced ${pantryItems.length} pantry items to shopping history`);
+} catch (e) {
+  console.log("Shopping history sync skipped (table may not exist yet)");
+}
+
+
+
+// Helper to categorize items for validation
+function categorizeForInit(name: string): string {
+  const lowerName = name.toLowerCase();
+  const sections: Record<string, string[]> = {
+    'Produce': ['apple', 'banana', 'orange', 'lettuce', 'spinach', 'carrot', 'onion', 'garlic', 'potato', 'tomato', 'cucumber', 'pepper', 'broccoli', 'cabbage', 'herb', 'cilantro', 'parsley', 'basil', 'ginger', 'lemon', 'lime', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'avocado', 'mushroom'],
+    'Meat & Seafood': ['chicken', 'beef', 'pork', 'steak', 'ground', 'turkey', 'fish', 'salmon', 'shrimp', 'tuna', 'bacon', 'sausage', 'ham', 'lamb'],
+    'Dairy & Eggs': ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'cream', 'sour cream', 'cottage cheese', 'parmesan', 'cheddar', 'mozzarella'],
+    'Bakery': ['bread', 'bun', 'tortilla', 'bagel', 'muffin', 'pastry', 'pita'],
+    'Pantry & Grains': ['rice', 'pasta', 'flour', 'sugar', 'oil', 'vinegar', 'honey', 'syrup', 'cereal', 'oat', 'bean', 'lentil', 'nut', 'seed', 'cracker', 'chip', 'snack', 'quinoa', 'couscous'],
+    'Canned & Jarred': ['canned', 'soup', 'sauce', 'salsa', 'pickle', 'olive', 'peanut butter', 'jam', 'jelly', 'broth', 'stock'],
+    'Frozen': ['frozen', 'ice cream', 'pizza'],
+    'Beverages': ['water', 'juice', 'soda', 'coffee', 'tea', 'beer', 'wine'],
+    'Spices & Baking': ['salt', 'pepper', 'spice', 'cinnamon', 'vanilla', 'baking powder', 'baking soda', 'yeast', 'cocoa']
+  };
+  for (const [section, keywords] of Object.entries(sections)) {
+    if (keywords.some(keyword => lowerName.includes(keyword))) {
+      return section;
+    }
+  }
+  return 'Other';
+}
 
 
 function initializeDatabase() {
-  const categorizeItem = (name: string): string => {
-    const lowerName = name.toLowerCase();
-    const sections: Record<string, string[]> = {
-      'Produce': ['apple', 'banana', 'orange', 'lettuce', 'spinach', 'carrot', 'onion', 'garlic', 'potato', 'tomato', 'cucumber', 'pepper', 'broccoli', 'cabbage', 'herb', 'cilantro', 'parsley', 'basil', 'ginger', 'lemon', 'lime', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'avocado', 'mushroom'],
-      'Meat & Seafood': ['chicken', 'beef', 'pork', 'steak', 'ground', 'turkey', 'fish', 'salmon', 'shrimp', 'tuna', 'bacon', 'sausage', 'ham', 'lamb'],
-      'Dairy & Eggs': ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'cream', 'sour cream', 'cottage cheese', 'parmesan', 'cheddar', 'mozzarella'],
-      'Bakery': ['bread', 'bun', 'tortilla', 'bagel', 'muffin', 'pastry', 'pita'],
-      'Pantry & Grains': ['rice', 'pasta', 'flour', 'sugar', 'oil', 'vinegar', 'honey', 'syrup', 'cereal', 'oat', 'bean', 'lentil', 'nut', 'seed', 'cracker', 'chip', 'snack', 'quinoa', 'couscous'],
-      'Canned & Jarred': ['canned', 'soup', 'sauce', 'salsa', 'pickle', 'olive', 'peanut butter', 'jam', 'jelly', 'broth', 'stock'],
-      'Frozen': ['frozen', 'ice cream', 'pizza'],
-      'Beverages': ['water', 'juice', 'soda', 'coffee', 'tea', 'beer', 'wine'],
-      'Spices & Baking': ['salt', 'pepper', 'spice', 'cinnamon', 'vanilla', 'baking powder', 'baking soda', 'yeast', 'cocoa']
-    };
-    for (const [section, keywords] of Object.entries(sections)) {
-      if (keywords.some(keyword => lowerName.includes(keyword))) {
-        return section;
-      }
-    }
-    return 'Other';
-  };
-  
   const pantryItems = db.prepare("SELECT id, name, category FROM pantry").all() as any[];
   for (const item of pantryItems) {
     if (!item.category || item.category === 'General') {
-      const newCategory = categorizeItem(item.name);
+      const newCategory = categorizeForInit(item.name);
       db.prepare("UPDATE pantry SET category = ? WHERE id = ?").run(newCategory, item.id);
     }
   }
@@ -143,7 +182,29 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3112;
 
-  app.use(cors());
+  // Helper to categorize items (same as frontend getSection)
+function getSection(itemName: string): string {
+  const lowerName = itemName.toLowerCase();
+  const sections: Record<string, string[]> = {
+    'Produce': ['apple', 'banana', 'orange', 'lettuce', 'spinach', 'carrot', 'onion', 'garlic', 'potato', 'tomato', 'cucumber', 'pepper', 'broccoli', 'cabbage', 'herb', 'cilantro', 'parsley', 'basil', 'ginger', 'lemon', 'lime', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'avocado', 'mushroom'],
+    'Meat & Seafood': ['chicken', 'beef', 'pork', 'steak', 'ground', 'turkey', 'fish', 'salmon', 'shrimp', 'tuna', 'bacon', 'sausage', 'ham', 'lamb'],
+    'Dairy & Eggs': ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'cream', 'sour cream', 'cottage cheese', 'parmesan', 'cheddar', 'mozzarella'],
+    'Bakery': ['bread', 'bun', 'tortilla', 'bagel', 'muffin', 'pastry', 'pita'],
+    'Pantry & Grains': ['rice', 'pasta', 'flour', 'sugar', 'oil', 'vinegar', 'honey', 'syrup', 'cereal', 'oat', 'bean', 'lentil', 'nut', 'seed', 'cracker', 'chip', 'snack', 'quinoa', 'couscous'],
+    'Canned & Jarred': ['canned', 'soup', 'sauce', 'salsa', 'pickle', 'olive', 'peanut butter', 'jam', 'jelly', 'broth', 'stock'],
+    'Frozen': ['frozen', 'ice cream', 'pizza'],
+    'Beverages': ['water', 'juice', 'soda', 'coffee', 'tea', 'beer', 'wine'],
+    'Spices & Baking': ['salt', 'pepper', 'spice', 'cinnamon', 'vanilla', 'baking powder', 'baking soda', 'yeast', 'cocoa']
+  };
+  for (const [section, keywords] of Object.entries(sections)) {
+    if (keywords.some(keyword => lowerName.includes(keyword))) {
+      return section;
+    }
+  }
+  return 'Other';
+}
+
+app.use(cors());
   app.use(express.json());
 
   // Build number API
@@ -299,17 +360,96 @@ async function startServer() {
     res.json(rows);
   });
 
+  app.get("/api/pantry/search", (req, res) => {
+    const query = (req.query.q as string || '').toLowerCase();
+    console.log('[search] query:', query, 'length:', query.length);
+    if (!query || query.length < 1) {
+      console.log('[search] returning empty, query too short');
+      return res.json([]);
+    }
+
+    try {
+      // Get pantry items
+      const pantryItems = db.prepare(
+        "SELECT name, category FROM pantry WHERE LOWER(name) LIKE ? LIMIT 10"
+      ).all(`%${query}%`) as { name: string; category: string }[];
+      console.log('[search] pantryItems:', pantryItems.length);
+
+      // Get shopping history
+      const historyItems = db.prepare(
+        "SELECT name, category FROM shopping_history WHERE LOWER(name) LIKE ? LIMIT 10"
+      ).all(`%${query}%`) as { name: string; category: string }[];
+      console.log('[search] historyItems:', historyItems.length);
+
+      // Get common grocery items that match
+      const commonMatches = commonGroceryItems
+        .filter(item => item.toLowerCase().includes(query))
+        .slice(0, 10)
+        .map(name => ({ name, category: '' }));
+      console.log('[search] commonMatches:', commonMatches.length);
+      console.log('[search] commonGroceryItems loaded:', commonGroceryItems.length, 'first few:', commonGroceryItems.slice(0, 5));
+
+    // Combine and deduplicate
+    const seen = new Set<string>();
+    const combined: { name: string; category?: string }[] = [];
+
+    for (const item of pantryItems) {
+      const key = item.name.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        combined.push({ name: item.name, category: item.category });
+      }
+    }
+
+    for (const item of historyItems) {
+      const key = item.name.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        combined.push({ name: item.name, category: item.category });
+      }
+    }
+
+    for (const item of commonMatches) {
+      const key = item.name.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        combined.push(item);
+      }
+    }
+
+      res.json(combined.slice(0, 10));
+    } catch (err) {
+      console.error('[search] error:', err);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
   app.post("/api/pantry", (req, res) => {
     const { name, category } = req.body;
     if (!name) return res.status(400).json({ error: "Name is required" });
     const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
+    const detectedCategory = category ? category : getSection(capitalized);
     const stmt = db.prepare(`
       INSERT INTO pantry (name, category)
       VALUES (?, ?)
       ON CONFLICT(name) DO UPDATE SET
         category = excluded.category
     `);
-    stmt.run(capitalized, category || "General");
+    stmt.run(capitalized, detectedCategory);
+
+    // Also add to shopping history
+    db.prepare("INSERT OR IGNORE INTO shopping_history (name, category) VALUES (?, ?)").run(capitalized, detectedCategory);
+
+    res.json({ success: true });
+  });
+
+  // Endpoint to add item directly to shopping history
+  app.post("/api/shopping-history", (req, res) => {
+    const { name, category } = req.body;
+    if (!name) return res.status(400).json({ error: "Name is required" });
+    const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
+    const detectedCategory = category ? category : getSection(capitalized);
+    db.prepare("INSERT OR IGNORE INTO shopping_history (name, category) VALUES (?, ?)").run(capitalized, detectedCategory);
     res.json({ success: true });
   });
 

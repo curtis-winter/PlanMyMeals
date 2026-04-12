@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, Plus, Trash2, Search, ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
 import { PantryItem } from '../types';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
+import { Autocomplete } from '../components/ui/Autocomplete';
 
 export default function MobilePantry() {
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
@@ -42,13 +43,13 @@ export default function MobilePantry() {
   const additionalSections = Object.keys(groupedItems).filter(s => !sectionOrder.includes(s));
   const allSections = [...sectionOrder, ...additionalSections];
 
-  const handleAddItem = async (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent, category?: string) => {
     e.preventDefault();
     if (!newItemName.trim() || isAdding) return;
     setIsAdding(true);
     try {
       const capitalized = newItemName.trim().charAt(0).toUpperCase() + newItemName.trim().slice(1);
-      const detectedSection = getSection(capitalized);
+      const detectedSection = category || getSection(capitalized);
       await fetch('/api/pantry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,6 +70,26 @@ export default function MobilePantry() {
       setPantryItems(prev => prev.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to remove item:', err);
+    }
+  };
+
+  const handleAutocompleteSelect = async (item: { name: string; category?: string }) => {
+    if (isAdding) return;
+    setIsAdding(true);
+    try {
+      const capitalized = item.name.charAt(0).toUpperCase() + item.name.slice(1);
+      const detectedSection = item.category || getSection(capitalized);
+      await fetch('/api/pantry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: capitalized, category: detectedSection })
+      });
+      setNewItemName('');
+      fetchPantryItems();
+    } catch (err) {
+      console.error('Failed to add item:', err);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -185,22 +206,22 @@ export default function MobilePantry() {
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme">
-        <form onSubmit={handleAddItem} className="flex gap-2">
-          <input
-            type="text"
+        <div className="flex gap-2">
+          <Autocomplete
             value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
+            onChange={setNewItemName}
+            onSelect={handleAutocompleteSelect}
             placeholder="Item name (e.g. Milk)"
-            className="flex-1 px-4 py-3 rounded-xl bg-background-theme border border-border-theme focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm text-primary"
           />
           <button
-            type="submit"
+            type="button"
             disabled={!newItemName.trim() || isAdding}
+            onClick={(e) => handleAddItem(e as any)}
             className="px-6 py-3 bg-primary text-background-theme rounded-xl font-bold hover:bg-secondary hover:text-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );

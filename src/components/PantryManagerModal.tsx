@@ -3,6 +3,7 @@ import { Plus, Trash2, Package, Search, Sparkles, Loader2, Smartphone } from 'lu
 import { PantryItem } from '../types';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 import { Modal } from './ui/Modal';
+import { Autocomplete } from './ui/Autocomplete';
 
 interface PantryManagerModalProps {
   isOpen: boolean;
@@ -39,11 +40,19 @@ export const PantryManagerModal: React.FC<PantryManagerModalProps> = ({
 
   const sectionOrder = Object.keys(GROCERY_SECTIONS);
 
-  const handleAddItem = async (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent, category?: string) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
     const capitalized = newItemName.trim().charAt(0).toUpperCase() + newItemName.trim().slice(1);
-    const detectedSection = getSection(capitalized);
+    const detectedSection = category || getSection(capitalized);
+    await savePantryItem({ name: capitalized, category: detectedSection });
+    setNewItemName('');
+  };
+
+  const handleAutocompleteSelect = async (item: { name: string; category?: string }) => {
+    setNewItemName(item.name);
+    const capitalized = item.name.charAt(0).toUpperCase() + item.name.slice(1);
+    const detectedSection = item.category || getSection(capitalized);
     await savePantryItem({ name: capitalized, category: detectedSection });
     setNewItemName('');
   };
@@ -139,17 +148,20 @@ export const PantryManagerModal: React.FC<PantryManagerModalProps> = ({
         </div>
       }
       footer={
-        <form onSubmit={handleAddItem} className="space-y-3">
-          <input
-            type="text"
+        <form className="space-y-3">
+          <Autocomplete
             value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
+            onChange={setNewItemName}
+            onSelect={handleAutocompleteSelect}
             placeholder="Item name (e.g. Milk)"
-            className="w-full px-4 py-2 rounded-xl bg-surface border border-border-theme focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm text-primary"
           />
           <button
             type="submit"
             disabled={!newItemName.trim()}
+            onClick={(e) => {
+              e.preventDefault();
+              handleAddItem(e as any);
+            }}
             className="w-full py-3 bg-primary text-background-theme rounded-xl font-bold hover:bg-secondary hover:text-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Plus className="w-4 h-4" /> Add to Pantry

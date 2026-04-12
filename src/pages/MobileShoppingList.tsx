@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, CheckCircle2, Copy, Check, Sparkles, Loader2, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Copy, Check, Sparkles, Loader2, ArrowLeft, Plus } from 'lucide-react';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 import { getWeekStart } from '../types';
+import { Autocomplete } from '../components/ui/Autocomplete';
 
 interface ShoppingItem {
   name: string;
@@ -14,6 +15,7 @@ interface ShoppingItem {
 export default function MobileShoppingList() {
   const [shoppingList, setShoppingList] = useState<[string, string[]][]>([]);
   const [customItems, setCustomItems] = useState<{ name: string; id: string }[]>([]);
+  const [newItemName, setNewItemName] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [itemCategories, setItemCategories] = useState<Record<string, string>>({});
@@ -177,6 +179,41 @@ export default function MobileShoppingList() {
     window.location.href = '/';
   };
 
+  const handleAddCustomItem = async () => {
+    if (!newItemName.trim()) return;
+    const newItem = { name: newItemName.trim(), id: Date.now().toString() };
+    const updated = [...customItems, newItem];
+    setCustomItems(updated);
+    localStorage.setItem('shoppingList_customItems', JSON.stringify(updated));
+    setNewItemName('');
+
+    // Add to shopping history
+    try {
+      await fetch('/api/shopping-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newItem.name, category: '' })
+      });
+    } catch {}
+  };
+
+  const handleAutocompleteSelect = async (item: { name: string; category?: string }) => {
+    const newItem = { name: item.name, id: Date.now().toString() };
+    const updated = [...customItems, newItem];
+    setCustomItems(updated);
+    localStorage.setItem('shoppingList_customItems', JSON.stringify(updated));
+    setNewItemName('');
+
+    // Add to shopping history
+    try {
+      await fetch('/api/shopping-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: item.name, category: item.category || '' })
+      });
+    } catch {}
+  };
+
   return (
     <div className="min-h-screen bg-background-theme pb-24">
       {/* Header */}
@@ -259,6 +296,21 @@ export default function MobileShoppingList() {
 
       {/* Fixed Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme space-y-3">
+        <div className="flex gap-2">
+          <Autocomplete
+            value={newItemName}
+            onChange={setNewItemName}
+            onSelect={handleAutocompleteSelect}
+            placeholder="Add item to list..."
+          />
+          <button
+            onClick={handleAddCustomItem}
+            disabled={!newItemName.trim()}
+            className="px-4 py-3 bg-primary text-background-theme rounded-xl font-bold hover:bg-secondary hover:text-primary transition-all disabled:opacity-50"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
         <button 
           onClick={handleCopy}
           className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all ${

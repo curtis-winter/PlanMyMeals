@@ -30,6 +30,7 @@
 - Vite config: `vite.config.ts` with React and Tailwind plugins
 - TypeScript config: `tsconfig.json`
 - Database initialization occurs in server startup
+- Common grocery items: `common-grocery-items.txt` (autocomplete source)
 
 ## Workflow
 1. Make code changes
@@ -58,6 +59,8 @@
 - `/api/meals` - Meal plan CRUD operations
 - `/api/recipes` - Recipe CRUD operations  
 - `/api/pantry` - Pantry inventory management
+- `/api/pantry/search` - Autocomplete search (combines pantry items, shopping history, and common grocery items)
+- `/api/shopping-history` - Add items to shopping history for autocomplete
 - `/api/ai/*` - AI-powered features (suggestions, recipe generation)
 - `/api/settings` - Application settings (Ollama URL, preferences)
 

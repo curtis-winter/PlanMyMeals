@@ -11,6 +11,7 @@ A comprehensive meal planning application with AI-powered recipe suggestions and
 - 📅 Weekly meal planning with drag-and-drop interface
 - 🍽️ Recipe management with ingredients and directions
 - 🥫 Pantry inventory tracking with automatic categorization
+- ⌨️ Autocomplete for adding pantry and shopping list items (1,200+ common grocery items)
 - 🤖 AI integration for recipe suggestions, import, and cleanup via Ollama
 - 🛒 Shopping list generation
 - 🏷️ Tagging and rating system for recipes
@@ -95,6 +96,8 @@ All API endpoints are prefixed with `/api`:
 - `GET /api/pantry` - Get all pantry items
 - `POST /api/pantry` - Add/update a pantry item
 - `DELETE /api/pantry/:id` - Delete a pantry item
+- `GET /api/pantry/search?q=<query>` - Search autocomplete (combines pantry items, shopping history, and common grocery items)
+- `POST /api/shopping-history` - Add item to shopping history for autocomplete suggestions
 
 ### AI Functions (Ollama Proxy)
 - `POST /api/ai/test-connection` - Test Ollama connection

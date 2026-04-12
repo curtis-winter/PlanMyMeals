@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, CheckCircle2, Copy, Check, Search, Sparkles, Loader2, X, Smartphone } from 'lucide-react';
 import { Modal } from './ui/Modal';
+import { Autocomplete } from './ui/Autocomplete';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 
 interface ShoppingListModalProps {
@@ -151,6 +152,27 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     }
   };
 
+  const handleAutocompleteSelect = async (item: { name: string; category?: string }) => {
+    if (onAddItem) {
+      onAddItem(item.name);
+    }
+    const newItem: CustomItem = {
+      name: item.name,
+      id: Date.now().toString()
+    };
+    saveCustomItems([...customItems, newItem]);
+    setNewItemName('');
+    
+    // Add to shopping history
+    try {
+      await fetch('/api/shopping-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: item.name, category: item.category })
+      });
+    } catch {}
+  };
+
   const handleRemoveCustomItem = (id: string) => {
     saveCustomItems(customItems.filter(item => item.id !== id));
   };
@@ -269,15 +291,12 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
       footer={
         <div className="space-y-3">
           {onAddItem && (
-            <form onSubmit={handleAddItem}>
-              <input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="Add item to list..."
-                className="w-full px-4 py-2 rounded-xl bg-surface border border-border-theme focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm text-primary placeholder:text-neutral-theme/30"
-              />
-            </form>
+            <Autocomplete
+              value={newItemName}
+              onChange={setNewItemName}
+              onSelect={handleAutocompleteSelect}
+              placeholder="Add item to list..."
+            />
           )}
           
           {allItems.length > 0 && (
