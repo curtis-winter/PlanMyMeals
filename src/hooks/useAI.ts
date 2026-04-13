@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DayOfWeek, Recipe, Ingredient, WeeklyPlan, Meal, PantryItem } from '../types';
 import { generateId } from '../utils/id';
+import { useSettings } from './useSettings';
 
 export function useAI(
   plan: WeeklyPlan,
@@ -8,6 +9,7 @@ export function useAI(
   saveDayPlan: (day: DayOfWeek, meal: Meal) => Promise<void>,
   pantryItems: PantryItem[]
 ) {
+  const { ollamaSettings } = useSettings();
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
   const [isSuggestingRecipe, setIsSuggestingRecipe] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);

@@ -1,0 +1,35 @@
+import { 
+  Check, 
+  CheckCircle2, 
+  Circle, 
+  Copy, 
+  Loader2, 
+  Plus, 
+  Settings, 
+  Sparkles, 
+  Tag,
+  Trash2, 
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  BookPlus
+} from 'lucide-react';
+
+export const Icons = {
+  Check,
+  CheckCircle2,
+  Circle,
+  Copy,
+  Loader2,
+  Plus,
+  Settings,
+  Sparkles,
+  Tag,
+  Trash2,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  BookPlus,
+};

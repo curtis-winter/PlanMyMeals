@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Trash2, Search, ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
+import { Package, Plus, Trash2, Search, ArrowLeft, Sparkles, Loader2, ShoppingCart } from 'lucide-react';
 import { PantryItem } from '../types';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 import { Autocomplete } from '../components/ui/Autocomplete';
@@ -129,23 +129,30 @@ export default function MobilePantry() {
 
   return (
     <div className="min-h-screen bg-background-theme pb-24">
-      <header className="bg-surface border-b border-border-theme sticky top-0 z-20">
-        <div className="flex items-center gap-3 p-4">
-          <button onClick={goBack} className="p-2 -ml-2 hover:bg-primary/10 rounded-lg">
-            <ArrowLeft className="w-5 h-5 text-primary" />
-          </button>
-          <div className="bg-primary p-2 rounded-xl">
-            <Package className="text-background-theme w-5 h-5" />
+        <header className="bg-surface border-b border-border-theme sticky top-0 z-20">
+          <div className="flex items-center justify-between p-4 w-full">
+            <div className="flex items-center gap-2">
+              <button onClick={() => window.location.href = '/'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Main">
+                <ArrowLeft className="w-5 h-5 text-primary" />
+              </button>
+              <div className="bg-primary p-2 rounded-xl">
+                <Package className="text-background-theme w-5 h-5" />
+              </div>
+              <h1 className="text-xl font-bold text-primary">Pantry</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => window.location.href = '/mobile'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Shopping List">
+                <ShoppingCart className="w-5 h-5 text-primary" />
+              </button>
+              <button
+                onClick={handleOptimizeCategories}
+                disabled={isOptimizing || pantryItems.length === 0}
+                className="p-2 text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
+              >
+                {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
-          <h1 className="text-xl font-bold text-primary flex-1">Pantry</h1>
-          <button
-            onClick={handleOptimizeCategories}
-            disabled={isOptimizing || pantryItems.length === 0}
-            className="p-2 text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
-          >
-            {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-          </button>
-        </div>
       </header>
 
       <div className="p-4 bg-surface border-b border-border-theme">
@@ -205,24 +212,19 @@ export default function MobilePantry() {
         )}
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme">
-        <div className="flex gap-2">
-          <Autocomplete
-            value={newItemName}
-            onChange={setNewItemName}
-            onSelect={handleAutocompleteSelect}
-            placeholder="Item name (e.g. Milk)"
-          />
-          <button
-            type="button"
-            disabled={!newItemName.trim() || isAdding}
-            onClick={(e) => handleAddItem(e as any)}
-            className="px-6 py-3 bg-primary text-background-theme rounded-xl font-bold hover:bg-secondary hover:text-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
+         <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme">
+           <div className="flex w-full items-end gap-2">
+             <div className="flex w-full">
+               <Autocomplete
+                 value={newItemName}
+                 onChange={setNewItemName}
+                 onSelect={handleAutocompleteSelect}
+                 placeholder="Item name (e.g. Milk) (press Enter to add)"
+                 className="flex-1 min-w-0 h-[3rem]"
+               />
+             </div>
+           </div>
+         </div>
     </div>
   );
 }

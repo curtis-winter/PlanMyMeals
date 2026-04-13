@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, CheckCircle2, Copy, Check, Search, Sparkles, Loader2, X, Smartphone } from 'lucide-react';
+import { ShoppingCart, Smartphone, Loader2, Sparkles, Search, X, Copy, Check, CheckCircle2 } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { Autocomplete } from './ui/Autocomplete';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';

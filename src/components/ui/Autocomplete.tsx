@@ -55,38 +55,41 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
     return () => clearTimeout(debounce);
   }, [value]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    switch (e.key) {
-      case 'Tab':
-        if (ghostText) {
-          e.preventDefault();
-          if (suggestions.length > 0) {
-            onSelect(suggestions[0]);
-            setGhostText('');
-          }
-        }
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex(prev => Math.max(prev - 1, -1));
-        break;
-      case 'Enter':
-        if (selectedIndex >= 0 && suggestions.length > 0) {
-          e.preventDefault();
-          onSelect(suggestions[selectedIndex]);
-          setGhostText('');
-        }
-        break;
-      case 'Escape':
-        setGhostText('');
-        setSelectedIndex(-1);
-        break;
-    }
-  };
+   const handleKeyDown = (e: React.KeyboardEvent) => {
+     switch (e.key) {
+       case 'Tab':
+         if (ghostText) {
+           e.preventDefault();
+           if (suggestions.length > 0) {
+             onSelect(suggestions[0]);
+             setGhostText('');
+           }
+         }
+         break;
+       case 'ArrowDown':
+         e.preventDefault();
+         setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+         break;
+       case 'ArrowUp':
+         e.preventDefault();
+         setSelectedIndex(prev => Math.max(prev - 1, -1));
+         break;
+       case 'Enter':
+         e.preventDefault();
+         if (selectedIndex >= 0 && suggestions.length > 0) {
+           onSelect(suggestions[selectedIndex]);
+           setGhostText('');
+         } else if (value.trim()) {
+           onSelect({ name: value.trim(), category: '' });
+           setGhostText('');
+         }
+         break;
+       case 'Escape':
+         setGhostText('');
+         setSelectedIndex(-1);
+         break;
+     }
+   };
 
   return (
     <div className="relative">

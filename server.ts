@@ -6,6 +6,7 @@ import fs from "fs";
 import Database from "better-sqlite3";
 import cors from "cors";
 import axios from "axios";
+import { getSection } from "./src/utils/grocerySections";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,9 +31,20 @@ if (fs.existsSync(commonItemsPath)) {
 
 /**
  * Helper function to get Ollama configuration from settings
+ * @param {string} [overrideUrl] - Optional URL to override the settings
  * @returns {{url: string, model: string}} Ollama configuration with url and model
  */
-function getOllamaConfig() {
+function getOllamaConfig(overrideUrl?: string) {
+  // If an override URL is provided, use it
+  if (overrideUrl) {
+    const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as {value?: string} | undefined;
+    return {
+      url: overrideUrl,
+      model: modelRow?.value || "llama3"
+    };
+  }
+  
+  // Otherwise, check settings
   const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as {value?: string} | undefined;
   const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as {value?: string} | undefined;
   
@@ -152,24 +164,7 @@ try {
 
 // Helper to categorize items for validation
 function categorizeForInit(name: string): string {
-  const lowerName = name.toLowerCase();
-  const sections: Record<string, string[]> = {
-    'Produce': ['apple', 'banana', 'orange', 'lettuce', 'spinach', 'carrot', 'onion', 'garlic', 'potato', 'tomato', 'cucumber', 'pepper', 'broccoli', 'cabbage', 'herb', 'cilantro', 'parsley', 'basil', 'ginger', 'lemon', 'lime', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'avocado', 'mushroom'],
-    'Meat & Seafood': ['chicken', 'beef', 'pork', 'steak', 'ground', 'turkey', 'fish', 'salmon', 'shrimp', 'tuna', 'bacon', 'sausage', 'ham', 'lamb'],
-    'Dairy & Eggs': ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'cream', 'sour cream', 'cottage cheese', 'parmesan', 'cheddar', 'mozzarella'],
-    'Bakery': ['bread', 'bun', 'tortilla', 'bagel', 'muffin', 'pastry', 'pita'],
-    'Pantry & Grains': ['rice', 'pasta', 'flour', 'sugar', 'oil', 'vinegar', 'honey', 'syrup', 'cereal', 'oat', 'bean', 'lentil', 'nut', 'seed', 'cracker', 'chip', 'snack', 'quinoa', 'couscous'],
-    'Canned & Jarred': ['canned', 'soup', 'sauce', 'salsa', 'pickle', 'olive', 'peanut butter', 'jam', 'jelly', 'broth', 'stock'],
-    'Frozen': ['frozen', 'ice cream', 'pizza'],
-    'Beverages': ['water', 'juice', 'soda', 'coffee', 'tea', 'beer', 'wine'],
-    'Spices & Baking': ['salt', 'pepper', 'spice', 'cinnamon', 'vanilla', 'baking powder', 'baking soda', 'yeast', 'cocoa']
-  };
-  for (const [section, keywords] of Object.entries(sections)) {
-    if (keywords.some(keyword => lowerName.includes(keyword))) {
-      return section;
-    }
-  }
-  return 'Other';
+  return getSection(name);
 }
 
 
@@ -189,27 +184,7 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3112;
 
-  // Helper to categorize items (same as frontend getSection)
-function getSection(itemName: string): string {
-  const lowerName = itemName.toLowerCase();
-  const sections: Record<string, string[]> = {
-    'Produce': ['apple', 'banana', 'orange', 'lettuce', 'spinach', 'carrot', 'onion', 'garlic', 'potato', 'tomato', 'cucumber', 'pepper', 'broccoli', 'cabbage', 'herb', 'cilantro', 'parsley', 'basil', 'ginger', 'lemon', 'lime', 'berry', 'strawberry', 'blueberry', 'raspberry', 'grape', 'avocado', 'mushroom'],
-    'Meat & Seafood': ['chicken', 'beef', 'pork', 'steak', 'ground', 'turkey', 'fish', 'salmon', 'shrimp', 'tuna', 'bacon', 'sausage', 'ham', 'lamb'],
-    'Dairy & Eggs': ['milk', 'egg', 'cheese', 'butter', 'yogurt', 'cream', 'sour cream', 'cottage cheese', 'parmesan', 'cheddar', 'mozzarella'],
-    'Bakery': ['bread', 'bun', 'tortilla', 'bagel', 'muffin', 'pastry', 'pita'],
-    'Pantry & Grains': ['rice', 'pasta', 'flour', 'sugar', 'oil', 'vinegar', 'honey', 'syrup', 'cereal', 'oat', 'bean', 'lentil', 'nut', 'seed', 'cracker', 'chip', 'snack', 'quinoa', 'couscous'],
-    'Canned & Jarred': ['canned', 'soup', 'sauce', 'salsa', 'pickle', 'olive', 'peanut butter', 'jam', 'jelly', 'broth', 'stock'],
-    'Frozen': ['frozen', 'ice cream', 'pizza'],
-    'Beverages': ['water', 'juice', 'soda', 'coffee', 'tea', 'beer', 'wine'],
-    'Spices & Baking': ['salt', 'pepper', 'spice', 'cinnamon', 'vanilla', 'baking powder', 'baking soda', 'yeast', 'cocoa']
-  };
-  for (const [section, keywords] of Object.entries(sections)) {
-    if (keywords.some(keyword => lowerName.includes(keyword))) {
-      return section;
-    }
-  }
-  return 'Other';
-}
+  
 
 app.use(cors());
   app.use(express.json());
@@ -286,9 +261,9 @@ app.use(cors());
     
     let requestUrl = urlParam || savedUrl?.value || '';
     
-    if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
-      requestUrl = requestUrl.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal');
-    }
+if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
+    requestUrl = "host.docker.internal" + ":" + (requestUrl.split(':')[2] || '11434');
+}
     
     if (!requestUrl || !requestUrl.startsWith('http')) {
       res.status(400).json({ error: "Invalid URL" });
@@ -503,13 +478,13 @@ app.use(cors());
 
   // AI Proxy for Ollama
    app.post("/api/ai/optimize-pantry", async (req, res) => {
-     const { items } = req.body;
+     const { items, ollama_url } = req.body;
      if (!items || !Array.isArray(items)) {
        return res.status(400).json({ error: "Items array required" });
      }
      
      try {
-       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
        const TIMEOUT = getOllamaTimeout('ollama_timeout_pantry', 90000);
       
       const itemNames = items.map((i: any) => i.name).join(', ');
@@ -582,9 +557,9 @@ Example output:
 No extra text.`;
 
    app.post("/api/ai/generate-ingredients", async (req, res) => {
-     const { recipeName, pantryContext } = req.body;
+     const { recipeName, pantryContext, ollama_url } = req.body;
      try {
-       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
        const TIMEOUT = getOllamaTimeout('ollama_timeout_ingredients', 30000);
 
       let prompt = `List the ingredients for "${recipeName}" with their typical amounts.${INGREDIENTS_FORMAT}`;
@@ -616,9 +591,9 @@ No extra text.`;
   });
 
    app.post("/api/ai/suggest-recipe", async (req, res) => {
-     const { pantryContext, additionalInstructions, dietaryOptions, recipeCount, useDifferentProteins, plannedRecipes } = req.body;
+     const { pantryContext, additionalInstructions, dietaryOptions, recipeCount, useDifferentProteins, plannedRecipes, ollama_url } = req.body;
      try {
-       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
        const TIMEOUT = getOllamaTimeout('ollama_timeout_suggest', 60000);
        
        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'suggest_prompt'").get() as {value?: string} | undefined;
@@ -687,7 +662,7 @@ Additional Instructions: {{additionalInstructions}}{{uniqueConstraint}}`;
   });
   
    app.post("/api/ai/import-recipe", async (req, res) => {
-     const { url, text } = req.body;
+     const { url, text, ollama_url } = req.body;
      try {
        let content = text || "";
        if (url) {
@@ -696,7 +671,7 @@ Additional Instructions: {{additionalInstructions}}{{uniqueConstraint}}`;
          content = response.data.replace(/<[^>]*>?/gm, ' ').replace(/\s\s+/g, ' ');
        }
        
-       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'import_prompt'").get() as {value?: string} | undefined;
        const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_import'").get() as {value?: string} | undefined;
        
@@ -728,9 +703,9 @@ Additional Instructions: {{additionalInstructions}}{{uniqueConstraint}}`;
   });
 
     app.post("/api/ai/cleanup-recipe", async (req, res) => {
-      const { recipe, additionalInstructions } = req.body;
+      const { recipe, additionalInstructions, ollama_url } = req.body;
       try {
-        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig();
+        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
         const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'cleanup_prompt'").get() as {value?: string} | undefined;
         const timeoutRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_timeout_cleanup'").get() as {value?: string} | undefined;
         

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, CheckCircle2, Copy, Check, Sparkles, Loader2, ArrowLeft, Plus } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Copy, Check, Sparkles, Loader2, ArrowLeft, Plus, Package } from 'lucide-react';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 import { getWeekStart } from '../types';
 import { Autocomplete } from '../components/ui/Autocomplete';
@@ -217,23 +217,30 @@ export default function MobileShoppingList() {
   return (
     <div className="min-h-screen bg-background-theme pb-24">
       {/* Header */}
-      <header className="bg-surface border-b border-border-theme sticky top-0 z-20">
-        <div className="flex items-center gap-3 p-4">
-          <button onClick={goBack} className="p-2 -ml-2 hover:bg-primary/10 rounded-lg">
-            <ArrowLeft className="w-5 h-5 text-primary" />
-          </button>
-          <div className="bg-primary p-2 rounded-xl">
-            <ShoppingCart className="text-background-theme w-5 h-5" />
+        <header className="bg-surface border-b border-border-theme sticky top-0 z-20">
+          <div className="flex items-center justify-between p-4 w-full">
+            <div className="flex items-center gap-2">
+              <button onClick={() => window.location.href = '/'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Main">
+                <ArrowLeft className="w-5 h-5 text-primary" />
+              </button>
+              <div className="bg-primary p-2 rounded-xl">
+                <ShoppingCart className="text-background-theme w-5 h-5" />
+              </div>
+              <h1 className="text-xl font-bold text-primary">Shopping List</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => window.location.href = '/pantry'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Pantry">
+                <Package className="w-5 h-5 text-primary" />
+              </button>
+              <button
+                onClick={handleOptimizeCategories}
+                disabled={isOptimizing || allItems.length === 0}
+                className="p-2 text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
+              >
+                {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
-          <h1 className="text-xl font-bold text-primary flex-1">Shopping List</h1>
-          <button
-            onClick={handleOptimizeCategories}
-            disabled={isOptimizing || allItems.length === 0}
-            className="p-2 text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
-          >
-            {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-          </button>
-        </div>
       </header>
 
       {/* Content */}
@@ -294,35 +301,31 @@ export default function MobileShoppingList() {
         )}
       </main>
 
-      {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme space-y-3">
-        <div className="flex gap-2">
-          <Autocomplete
-            value={newItemName}
-            onChange={setNewItemName}
-            onSelect={handleAutocompleteSelect}
-            placeholder="Add item to list..."
-          />
-          <button
-            onClick={handleAddCustomItem}
-            disabled={!newItemName.trim()}
-            className="px-4 py-3 bg-primary text-background-theme rounded-xl font-bold hover:bg-secondary hover:text-primary transition-all disabled:opacity-50"
+        {/* Fixed Bottom Actions */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme space-y-3">
+          <div className="flex w-full items-end gap-2">
+            <div className="flex w-full">
+              <Autocomplete
+                value={newItemName}
+                onChange={setNewItemName}
+                onSelect={handleAutocompleteSelect}
+                placeholder="Add item to list (press Enter to add)"
+                className="flex-1 min-w-0 h-[3rem]"
+              />
+            </div>
+          </div>
+          <button 
+            onClick={handleCopy}
+            className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all ${
+              copySuccess 
+                ? 'bg-green-500 text-white' 
+                : 'bg-primary text-background-theme hover:bg-secondary hover:text-primary'
+            }`}
           >
-            <Plus className="w-5 h-5" />
+            {copySuccess ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+            {copySuccess ? 'Copied!' : 'Copy List'}
           </button>
         </div>
-        <button 
-          onClick={handleCopy}
-          className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all ${
-            copySuccess 
-              ? 'bg-green-500 text-white' 
-              : 'bg-primary text-background-theme hover:bg-secondary hover:text-primary'
-          }`}
-        >
-          {copySuccess ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-          {copySuccess ? 'Copied!' : 'Copy List'}
-        </button>
-      </div>
     </div>
   );
 }
