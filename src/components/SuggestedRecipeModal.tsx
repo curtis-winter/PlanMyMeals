@@ -39,6 +39,8 @@ export const SuggestedRecipeModal: React.FC<SuggestedRecipeModalProps> = ({
   const currentRecipe = suggestedRecipes[currentIndex];
   const currentTags = recipeTags[currentIndex] || [];
 
+  console.log('[SuggestedRecipeModal] Recipes:', suggestedRecipes.length, suggestedRecipes.map(r => r.name));
+
   const addTag = () => {
     if (newTag && !currentTags.includes(newTag)) {
       setRecipeTags(prev => ({
