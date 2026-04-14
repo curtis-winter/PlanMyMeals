@@ -70,61 +70,89 @@ export const SuggestedRecipeModal: React.FC<SuggestedRecipeModalProps> = ({
       title="Suggested Recipe"
       maxWidth="max-w-2xl"
        icon={<Icons.Sparkles className="text-background-theme w-5 h-5" />}
-      headerActions={
+headerActions={
         suggestedRecipes.length > 1 && (
-          <div className="flex items-center gap-1 mr-4 bg-background-theme rounded-lg p-1">
+          <div className="flex items-center gap-3 mr-4">
+            <span className="text-xs font-medium text-neutral-theme">
+              {currentIndex + 1} / {suggestedRecipes.length}
+            </span>
+            <div className="flex items-center gap-1 bg-background-theme rounded-lg p-1">
               <button
-               onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
-               disabled={currentIndex === 0}
-               className="p-1 hover:bg-surface rounded-md disabled:opacity-30 transition-colors"
-             >
-               <Icons.ChevronLeft className="w-5 h-5 text-primary" />
-             </button>
-             <button
-               onClick={() => setCurrentIndex(prev => Math.min(suggestedRecipes.length - 1, prev + 1))}
-               disabled={currentIndex === suggestedRecipes.length - 1}
-               className="p-1 hover:bg-surface rounded-md disabled:opacity-30 transition-colors"
-             >
-               <Icons.ChevronRight className="w-5 h-5 text-primary" />
-             </button>
-           </div >
-         )
-       }
-       footer={
-         <div className="flex gap-3">
-           <button
-             onClick={() => {
-               saveToRecipeBook(getRecipeWithTags());
-               if (suggestedRecipes.length === 1) onClose();
-             }}
-             className="flex-1 bg-surface border border-border-theme text-primary py-4 rounded-2xl font-bold hover:bg-background-theme transition-all flex items-center justify-center gap-2"
-           >
-             <Icons.BookPlus className="w-5 h-5" />
-             Save to Book
-           </button>
-           <div className="flex-1 relative group">
-             <button
-               className="w-full bg-primary text-background-theme py-4 rounded-2xl font-bold hover:bg-secondary hover:text-primary transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-             >
-               Add to Day
-               <Icons.ChevronDown className="w-4 h-4" />
-             </button>
-             <div className="absolute bottom-full left-0 w-full mb-2 bg-surface rounded-2xl shadow-xl border border-border-theme overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-               {orderedDays.map(day => (
-                 <button
-                   key={day}
-                   onClick={() => {
-                     applyRecipeToDay(getRecipeWithTags(), day);
-                     if (suggestedRecipes.length === 1) onClose();
-                   }}
-                   className="w-full px-4 py-3 text-left text-sm font-medium text-text-theme hover:bg-background-theme hover:text-primary transition-colors"
-                 >
-                   {day}
-                 </button>
-               ))}
-             </div>
-           </div>
-         </div>
+                onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentIndex === 0}
+                className="p-1 hover:bg-surface rounded-md disabled:opacity-30 transition-colors"
+              >
+                <Icons.ChevronLeft className="w-5 h-5 text-primary" />
+              </button>
+              <button
+                onClick={() => setCurrentIndex(prev => Math.min(suggestedRecipes.length - 1, prev + 1))}
+                disabled={currentIndex === suggestedRecipes.length - 1}
+                className="p-1 hover:bg-surface rounded-md disabled:opacity-30 transition-colors"
+              >
+                <Icons.ChevronRight className="w-5 h-5 text-primary" />
+              </button>
+            </div>
+          </div>
+        )
+      }
+footer={
+          <div className="flex gap-3">
+            <div className="flex-1 relative group">
+              <button
+                className="w-full bg-surface border border-border-theme text-primary py-4 rounded-2xl font-bold hover:bg-background-theme transition-all flex items-center justify-center gap-2"
+              >
+                <Icons.BookPlus className="w-5 h-5" />
+                Save to Book
+                {suggestedRecipes.length > 1 && <Icons.ChevronDown className="w-4 h-4" />}
+              </button>
+              <div className="absolute bottom-full left-0 w-full mb-2 bg-surface rounded-2xl shadow-xl border border-border-theme overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                <button
+                  onClick={() => {
+                    saveToRecipeBook(getRecipeWithTags());
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm font-medium text-text-theme hover:bg-background-theme hover:text-primary transition-colors"
+                >
+                  Save Current Recipe
+                </button>
+                {suggestedRecipes.length > 1 && (
+                  <button
+                    onClick={() => {
+                      suggestedRecipes.forEach((recipe, idx) => {
+                        const tags = recipeTags[idx] || recipe.tags || [];
+                        saveToRecipeBook({ ...recipe, tags });
+                      });
+                      onClose();
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm font-medium text-text-theme hover:bg-background-theme hover:text-primary transition-colors"
+                  >
+                    Save All ({suggestedRecipes.length})
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 relative group">
+              <button
+                className="w-full bg-primary text-background-theme py-4 rounded-2xl font-bold hover:bg-secondary hover:text-primary transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+              >
+                Add to Day
+                <Icons.ChevronDown className="w-4 h-4" />
+              </button>
+              <div className="absolute bottom-full left-0 w-full mb-2 bg-surface rounded-2xl shadow-xl border border-border-theme overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                {orderedDays.map(day => (
+                  <button
+                    key={day}
+                    onClick={() => {
+                      applyRecipeToDay(getRecipeWithTags(), day);
+                      if (suggestedRecipes.length === 1) onClose();
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm font-medium text-text-theme hover:bg-background-theme hover:text-primary transition-colors"
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
        }
      >
        <div className="p-6 bg-background-theme/30">
