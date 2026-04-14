@@ -34,7 +34,12 @@
     --border: #542344;
   }
 
+  html {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background-theme text-text-theme transition-colors duration-300;
+    overflow-x: hidden;
   }
 }

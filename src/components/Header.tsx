@@ -44,34 +44,16 @@ export function Header({
   onToggleSettings,
   onToggleRecipeBook,
   onTogglePantryManager,
-  onToggleShoppingList,
+onToggleShoppingList,
   onNavigateWeek
 }: HeaderProps) {
-  const getWeekLabel = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const current = new Date(currentWeekStart + 'T00:00:00');
-    current.setHours(0, 0, 0, 0);
-    
-    // Get the configured week start day
-    const configuredStart = weekStartDay;
-    const thisWeeksStartStr = getWeekStart(today, configuredStart);
-    const thisWeeksStart = new Date(thisWeeksStartStr + 'T00:00:00');
-    const thisWeeksEnd = new Date(thisWeeksStart);
-    thisWeeksEnd.setDate(thisWeeksEnd.getDate() + 6);
-    
-    if (current.getTime() === thisWeeksStart.getTime()) return 'Current Week';
-    if (current > today) return 'Future Week';
-    return 'Past Week';
-  };
-
   return (
-    <header className={`border-b sticky top-0 z-30 transition-colors ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
+    <header className={`border-b sticky top-0 z-30 ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
       <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button 
             onClick={onToggleSettings}
-            className={`p-2 transition-colors ${isLocalHost ? 'text-white hover:text-red-200' : 'text-neutral-theme hover:text-primary'}`}
+            className={`p-2 ${isLocalHost ? 'text-white hover:text-red-200' : 'text-neutral-theme hover:text-primary'}`}
             title="Settings"
           >
             <Settings className="w-6 h-6" />
@@ -81,34 +63,44 @@ export function Header({
           </div>
           <h1 className={`font-bold text-xl tracking-tight ${isLocalHost ? 'text-white' : 'text-primary'}`}>MyMealPlan</h1>
         </div>
-        <div className="flex items-center gap-2 flex-nowrap">
+        <div className="flex items-center gap-2 shrink-0">
           {isLocalHost && buildNumber > 0 && (
-            <span className="bg-white text-red-600 px-3 py-1 rounded-full text-sm font-bold">
+            <span className="bg-white text-red-600 px-3 py-1 rounded-full text-sm font-bold shrink-0">
               Build #{buildNumber}
             </span>
           )}
           <button 
+            id="btn-recipe-book"
             onClick={onToggleRecipeBook}
-            className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white/20 border-white/40 text-white hover:bg-white/30' : 'bg-surface border-border-theme text-primary hover:bg-background-theme'}`}
+            className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full shadow-sm shrink-0 ${isLocalHost ? 'bg-white/20 border-white/40 text-white' : 'bg-surface border-border-theme text-primary'}`}
+            style={{ transition: 'none' }}
           >
             <BookOpen className="w-4 h-4" />
             <span className="hidden sm:inline">Recipe Book</span>
           </button>
           <button 
+            id="btn-pantry"
             onClick={onTogglePantryManager}
-            className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white/20 border-white/40 text-white hover:bg-white/30' : 'bg-surface border-border-theme text-primary hover:bg-background-theme'}`}
+            className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full shadow-sm shrink-0 ${isLocalHost ? 'bg-white/20 border-white/40 text-white' : 'bg-surface border-border-theme text-primary'}`}
+            style={{ transition: 'none' }}
           >
             <Package className="w-4 h-4" />
             <span className="hidden sm:inline">Pantry</span>
           </button>
           <button 
+            id="btn-shopping-list"
             onClick={onToggleShoppingList}
-            className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white text-red-600 hover:bg-red-100' : 'bg-primary text-background-theme hover:bg-secondary hover:text-primary'}`}
+            className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full shadow-sm shrink-0 ${isLocalHost ? 'bg-white text-red-600' : 'bg-primary text-background-theme'}`}
+            style={{ transition: 'none' }}
           >
             <ShoppingCart className="w-4 h-4" />
             <span className="hidden sm:inline">Shopping List</span>
             {shoppingList.length > 0 && (
-              <span className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold ${isLocalHost ? 'bg-red-800 text-white' : 'bg-accent-theme text-black'}`}>
+              <span 
+                id="badge-shopping-list"
+                className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold ${isLocalHost ? 'bg-red-800 text-white' : 'bg-accent-theme text-black'}`}
+                style={{ transform: 'none', transition: 'none' }}
+              >
                 {shoppingList.length}
               </span>
             )}

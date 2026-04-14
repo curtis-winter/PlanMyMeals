@@ -277,7 +277,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background-theme text-text-theme font-sans pb-20 transition-colors">
+    <div className="min-h-screen bg-background-theme text-text-theme font-sans pb-20 transition-colors overflow-x-hidden">
       <Header 
         isLocalHost={isLocalHost}
         buildNumber={buildNumber}
@@ -534,21 +534,23 @@ export default function App() {
         />
       )}
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-4 sm:hidden z-50">
+      {/* Floating Action Buttons - only visible on mobile */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-4 md:hidden z-50">
         <button 
+          id="fab-recipe-book"
           onClick={() => setShowRecipeBook(true)}
           className="w-14 h-14 bg-primary text-background-theme rounded-full shadow-xl flex items-center justify-center hover:bg-secondary hover:text-primary transition-all active:scale-90"
         >
           <BookOpen className="w-6 h-6" />
         </button>
         <button 
+          id="fab-shopping-list"
           onClick={() => setShowShoppingList(true)}
-          className="w-14 h-14 bg-primary text-background-theme rounded-full shadow-xl flex items-center justify-center hover:bg-secondary hover:text-primary transition-all active:scale-90"
+          className="w-14 h-14 bg-primary text-background-theme rounded-full shadow-xl flex items-center justify-center hover:bg-secondary hover:text-primary transition-all active:scale-90 relative"
         >
           <ShoppingCart className="w-6 h-6" />
           {shoppingList.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-accent-theme text-primary text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-surface font-bold">
+            <span id="fab-badge" className="absolute -top-1 -right-1 bg-accent-theme text-primary text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-surface font-bold">
               {shoppingList.length}
             </span>
           )}
