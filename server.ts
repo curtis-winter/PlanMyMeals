@@ -8,6 +8,55 @@ import cors from "cors";
 import axios from "axios";
 import { getSection } from "./src/utils/grocerySections";
 
+interface SettingsRow {
+  key: string;
+  value: string;
+}
+
+interface MealPlanRow {
+  id: number;
+  week_start: string;
+  day: string;
+  recipes: string;
+  instructions: string;
+}
+
+interface RecipeRow {
+  id: number;
+  name: string;
+  ingredients: string;
+  directions: string;
+  rating: number;
+  tags: string;
+}
+
+interface PantryRow {
+  id: number;
+  name: string;
+  category: string;
+}
+
+interface ShoppingHistoryRow {
+  id: number;
+  name: string;
+  category: string;
+}
+
+interface OllamaServerRow {
+  id: number;
+  name: string;
+  url: string;
+  created_at: string;
+}
+
+interface DbVersionRow {
+  version: number;
+}
+
+interface ApiError extends Error {
+  message: string;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -65,13 +114,20 @@ function getOllamaTimeout(key: string, defaultValue: number): number {
   return row && row.value !== undefined ? parseInt(row.value) : defaultValue;
 }
 
-// Initialize DB
+// Initialize DB with versioning
+const CURRENT_DB_VERSION = 3;
+
 db.exec(`
+  CREATE TABLE IF NOT EXISTS db_version (
+    version INTEGER PRIMARY KEY
+  );
+
   CREATE TABLE IF NOT EXISTS meal_plans (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     week_start TEXT NOT NULL,
     day TEXT NOT NULL,
     recipes TEXT,
+    instructions TEXT,
     UNIQUE(week_start, day)
   );
 
@@ -109,47 +165,47 @@ db.exec(`
   );
 `);
 
-// Migration: Add columns if they don't exist (for older DBs)
-try {
-  db.exec("ALTER TABLE meal_plans ADD COLUMN recipes TEXT;");
-} catch (e) {
-  // Column likely already exists
-}
+// Get current version
+let dbVersion = (db.prepare("SELECT version FROM db_version").get() as { version: number } | undefined)?.version || 0;
 
-try {
-  db.exec("ALTER TABLE meal_plans ADD COLUMN instructions TEXT;");
-} catch (e) {
-  // Column likely already exists
-}
+// Run migrations
+const migrations = [
+  {
+    version: 1,
+    up: () => {
+      db.exec(`
+        UPDATE meal_plans SET recipes = '[]' WHERE recipes IS NULL OR recipes = '';
+      `);
+    }
+  },
+  {
+    version: 2,
+    up: () => {
+      db.prepare("INSERT OR IGNORE INTO shopping_history (name, category) SELECT name, category FROM pantry").run();
+    }
+  },
+  {
+    version: 3,
+    up: () => {
+      // Ensure instructions column exists (for DBs created before v3)
+      try {
+        db.exec("ALTER TABLE meal_plans ADD COLUMN instructions TEXT;");
+      } catch (e) {
+        // Column already exists
+      }
+    }
+  }
+];
 
-try {
-  db.exec("ALTER TABLE recipes ADD COLUMN directions TEXT;");
-} catch (e) {
-  // Column likely already exists
+// Apply pending migrations
+for (const migration of migrations) {
+  if (dbVersion < migration.version) {
+    console.log(`[migration] Running version ${migration.version}...`);
+    migration.up();
+    db.prepare("INSERT OR REPLACE INTO db_version (version) VALUES (?)").run(migration.version);
+    dbVersion = migration.version;
+  }
 }
-
-try {
-  db.exec("ALTER TABLE shopping_history ADD COLUMN category TEXT;");
-} catch (e) {
-  // Column may not exist yet or already exists
-}
-
-try {
-  db.exec("ALTER TABLE recipes ADD COLUMN tags TEXT;");
-} catch (e) {
-  // Column likely already exists
-}
-
-// Migrate existing data
-try {
-  db.exec(`
-    UPDATE meal_plans SET recipes = '[]' WHERE recipes IS NULL OR recipes = '';
-  `);
-} catch (e) {
-  // Ignore migration errors
-}
-
-// Sync pantry items to shopping history on startup
 try {
   const pantryItems = db.prepare("SELECT name, category FROM pantry").all() as { name: string; category: string }[];
   for (const item of pantryItems) {
@@ -206,8 +262,8 @@ app.use(cors());
 
   // Settings API
   app.get("/api/settings", (req, res) => {
-    const rows = db.prepare("SELECT * FROM settings").all();
-    const settings = rows.reduce((acc: any, row: any) => {
+    const rows = db.prepare("SELECT * FROM settings").all() as SettingsRow[];
+    const settings = rows.reduce((acc: Record<string, string>, row: SettingsRow) => {
       acc[row.key] = row.value;
       return acc;
     }, {});
@@ -255,29 +311,36 @@ app.use(cors());
     res.json({ success: true });
   });
 
-  app.get("/api/ai/test-connection", async (req, res) => {
-    const urlParam = req.query.url as string;
-    const savedUrl = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as { value: string } | undefined;
-    
-    let requestUrl = urlParam || savedUrl?.value || '';
-    
-if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
-    requestUrl = "host.docker.internal" + ":" + (requestUrl.split(':')[2] || '11434');
-}
-    
-    if (!requestUrl || !requestUrl.startsWith('http')) {
-      res.status(400).json({ error: "Invalid URL" });
-      return;
-    }
-    
-    try {
-      const response = await axios.get(`${requestUrl}/api/tags`);
-      res.json({ success: true, models: response.data.models });
-    } catch (err: any) {
-      console.error("Ollama connection test failed:", err.message);
-      res.status(500).json({ error: `Could not connect to Ollama: ${err.message}` });
-    }
-  });
+   app.get("/api/ai/test-connection", async (req, res) => {
+     const urlParam = req.query.url as string;
+     const savedUrl = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as { value: string } | undefined;
+     
+     let requestUrl = urlParam || savedUrl?.value || '';
+     
+     // Handle localhost/127.0.0.1 for Docker environment
+     // When running in Docker, localhost refers to the container itself
+     // So we need to use host.docker.internal to reach the host machine
+     if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
+       // Extract port from URL (default to 11434 if no port specified)
+       const urlParts = requestUrl.split(':');
+       const port = urlParts.length > 2 ? urlParts[2] : '11434';
+       requestUrl = "http://host.docker.internal:" + port;
+     }
+     
+     if (!requestUrl || !requestUrl.startsWith('http')) {
+       res.status(400).json({ error: "Invalid URL" });
+       return;
+     }
+     
+try {
+        const response = await axios.get(`${requestUrl}/api/tags`);
+        res.json({ success: true, models: response.data.models });
+      } catch (err) {
+        const error = err as ApiError;
+        console.error("Ollama connection test failed:", error.message);
+        res.status(500).json({ error: `Could not connect to Ollama: ${error.message}` });
+      }
+    });
 
   // API Routes
   
@@ -304,8 +367,8 @@ if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
 
   // Recipes API
   app.get("/api/recipes", (req, res) => {
-    const rows = db.prepare("SELECT * FROM recipes").all();
-    res.json(rows.map((r: any) => ({ 
+    const rows = db.prepare("SELECT * FROM recipes").all() as RecipeRow[];
+    res.json(rows.map((r: RecipeRow) => ({ 
       ...r, 
       ingredients: JSON.parse(r.ingredients || "[]"),
       directions: JSON.parse(r.directions || "[]"),
@@ -360,10 +423,11 @@ if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
       // Get the new recipe ID
       const newId = result.lastInsertRowid;
       res.json({ success: true, id: newId });
-    } catch (err: any) {
-      console.error("Error saving recipe:", err);
-      console.error("Error stack:", err.stack);
-      res.status(500).json({ error: err.message || "Failed to save recipe" });
+    } catch (err) {
+      const error = err as ApiError;
+      console.error("Error saving recipe:", error);
+      console.error("Error stack:", error.stack);
+      res.status(500).json({ error: error.message || "Failed to save recipe" });
     }
   });
 
@@ -478,16 +542,20 @@ if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
 
   // AI Proxy for Ollama
    app.post("/api/ai/optimize-pantry", async (req, res) => {
-     const { items, ollama_url } = req.body;
-     if (!items || !Array.isArray(items)) {
-       return res.status(400).json({ error: "Items array required" });
-     }
-     
-     try {
-       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
-       const TIMEOUT = getOllamaTimeout('ollama_timeout_pantry', 90000);
+const { items, ollama_url } = req.body;
+      if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ error: "Items array required" });
+      }
       
-      const itemNames = items.map((i: any) => i.name).join(', ');
+      try {
+        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
+        const TIMEOUT = getOllamaTimeout('ollama_timeout_pantry', 90000);
+       
+        interface PantryItemInput {
+          name: string;
+          category?: string;
+        }
+        const itemNames = items.map((i: PantryItemInput) => i.name).join(', ');
       const prompt = `Given these pantry items: ${itemNames}. Categorize each into one of: Produce, Meat & Seafood, Dairy & Eggs, Bakery, Pantry & Grains, Canned & Jarred, Frozen, Beverages, Spices & Baking, Other. 
 
 Example output format:
@@ -523,9 +591,10 @@ Output ONLY valid JSON array, no other text.`;
           res.status(500).json({ error: "Invalid response format from AI" });
         }
       }
-    } catch (err: any) {
-      console.error("Pantry optimization error:", err.message || err.toString());
-      res.status(500).json({ error: err.message || err.toString() || "Failed to optimize pantry categories" });
+    } catch (err) {
+      const error = err as ApiError;
+      console.error("Pantry optimization error:", error.message || error.toString());
+      res.status(500).json({ error: error.message || error.toString() || "Failed to optimize pantry categories" });
     }
   });
 

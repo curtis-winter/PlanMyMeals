@@ -4,21 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { 
-   Plus, 
-   ShoppingCart, 
-   ChevronRight, 
-   ChevronLeft,
-   UtensilsCrossed,
-   BookOpen,
-   Sparkles,
-   Loader2,
-   Settings,
-   Package,
-   Upload
- } from 'lucide-react';
-import { motion } from 'motion/react';
-import { DAYS_OF_WEEK, DayOfWeek, Ingredient, getWeekStart, Recipe } from './types';
+import { BookOpen, ShoppingCart } from 'lucide-react';
+import { DAYS_OF_WEEK, DayOfWeek, Ingredient, Recipe } from './types';
 
 // Hooks
 import { usePantry } from './hooks/usePantry';
@@ -28,6 +15,7 @@ import { useSettings } from './hooks/useSettings';
 import { useOllamaServers } from './hooks/useOllamaServers';
 import { useAI } from './hooks/useAI';
 import { useBuildInfo } from './hooks/useBuildInfo';
+import { useModalState } from './hooks/useModalState';
 
 // Components
 import { ShoppingListModal } from './components/ShoppingListModal';
@@ -40,6 +28,8 @@ import { SuggestedRecipeModal } from './components/SuggestedRecipeModal';
 import { RecipeEditorModal } from './components/RecipeEditorModal';
 import { CookRecipeModal } from './components/CookRecipeModal';
 import { DayCard } from './components/DayCard';
+import { Header } from './components/Header';
+import { WeekControls } from './components/WeekControls';
 
 export default function App() {
   const {
@@ -126,12 +116,12 @@ export default function App() {
     isCleaningUp,
     isImporting,
     suggestedRecipes,
-    showSuggestedRecipeModal,
-    setShowSuggestedRecipeModal,
-    showPantryModal,
-    setShowPantryModal,
-    showImportModal,
-    setShowImportModal,
+    showSuggestedRecipeModal: aiShowSuggestedModal,
+    setShowSuggestedRecipeModal: setAiShowSuggestedModal,
+    showPantryModal: aiShowPantryModal,
+    setShowPantryModal: setAiShowPantryModal,
+    showImportModal: aiShowImportModal,
+    setShowImportModal: setAiShowImportModal,
     setActiveDayForAI,
     setActiveRecipeIndex,
     pantryContext,
@@ -148,6 +138,25 @@ export default function App() {
     importRecipe,
     cleanupRecipe
   } = useAI(plan, setPlan, saveDayPlan, pantryItems);
+
+  const {
+    showShoppingList,
+    setShowShoppingList,
+    showPantryManager,
+    setShowPantryManager,
+    showRecipeBook,
+    setShowRecipeBook,
+    showSettings,
+    setShowSettings,
+    showRecipeEditor,
+    setShowRecipeEditor,
+    editingRecipe,
+    setEditingRecipe,
+    showCookModal,
+    setShowCookModal,
+    cookingRecipe,
+    setCookingRecipe
+  } = useModalState();
 
   const { buildNumber } = useBuildInfo();
   const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
@@ -181,31 +190,20 @@ export default function App() {
   // Set initial expanded day to today's day on load, only if current week contains today
   React.useEffect(() => {
     if (orderedDays.length > 0 && currentWeekStart) {
-      // Check if current week contains today
       const weekStart = new Date(currentWeekStart + 'T00:00:00');
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
       
       if (today >= weekStart && today <= weekEnd) {
-        // Week contains today - expand today's day
         const diff = Math.floor((today.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
         const dayIndex = ((diff % 7) + 7) % 7;
         setExpandedDay(orderedDays[dayIndex]);
       } else {
-        // Week doesn't contain today - keep all minimized
         setExpandedDay(null);
       }
     }
   }, [orderedDays, currentWeekStart]);
 
-  const [showShoppingList, setShowShoppingList] = useState(false);
-  const [showPantryManager, setShowPantryManager] = useState(false);
-  const [showRecipeBook, setShowRecipeBook] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showRecipeEditor, setShowRecipeEditor] = useState(false);
-  const [editingRecipe, setEditingRecipe] = useState<Partial<Recipe> | null>(null);
-  const [showCookModal, setShowCookModal] = useState(false);
-  const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
   const [dragSource, setDragSource] = useState<{ day: DayOfWeek; index: number } | null>(null);
 
   const syncPantryFromIngredient = (name: string, isAvailable: boolean) => {
@@ -265,7 +263,6 @@ export default function App() {
         if (nameInput) nameInput.focus();
       } else {
         addIngredient(day, recipeIndex);
-        // Focus the new amount field after state update
         setTimeout(() => {
           const container = document.querySelector(`[data-day="${day}"][data-recipe="${recipeIndex}"]`);
           const rows = container?.querySelectorAll('.ingredient-row');
@@ -281,121 +278,35 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background-theme text-text-theme font-sans pb-20 transition-colors">
-      {/* Header */}
-      <header className={`border-b sticky top-0 z-30 transition-colors ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowSettings(true)}
-              className={`p-2 transition-colors ${isLocalHost ? 'text-white hover:text-red-200' : 'text-neutral-theme hover:text-primary'}`}
-              title="Settings"
-            >
-              <Settings className="w-6 h-6" />
-            </button>
-            <div className={`p-2 rounded-lg ${isLocalHost ? 'bg-white' : 'bg-primary'}`}>
-              <UtensilsCrossed className={`w-5 h-5 ${isLocalHost ? 'text-red-600' : 'text-background-theme'}`} />
-            </div>
-            <h1 className={`font-bold text-xl tracking-tight ${isLocalHost ? 'text-white' : 'text-primary'}`}>MyMealPlan</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {isLocalHost && buildNumber > 0 && (
-              <span className="bg-white text-red-600 px-3 py-1 rounded-full text-sm font-bold">
-                Build #{buildNumber}
-              </span>
-            )}
-            <button 
-              onClick={() => setShowRecipeBook(true)}
-              className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white/20 border-white/40 text-white hover:bg-white/30' : 'bg-surface border-border-theme text-primary hover:bg-background-theme'}`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Recipe Book</span>
-            </button>
-            <button 
-              onClick={() => setShowPantryManager(true)}
-              className={`flex items-center gap-2 border text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white/20 border-white/40 text-white hover:bg-white/30' : 'bg-surface border-border-theme text-primary hover:bg-background-theme'}`}
-            >
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">Pantry</span>
-            </button>
-            <button 
-              onClick={() => setShowShoppingList(true)}
-              className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full transition-colors shadow-sm ${isLocalHost ? 'bg-white text-red-600 hover:bg-red-100' : 'bg-primary text-background-theme hover:bg-secondary hover:text-primary'}`}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="hidden sm:inline">Shopping List</span>
-              {shoppingList.length > 0 && (
-                <span className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold ${isLocalHost ? 'bg-red-800 text-white' : 'bg-accent-theme text-black'}`}>
-                  {shoppingList.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header 
+        isLocalHost={isLocalHost}
+        buildNumber={buildNumber}
+        weekStartDay={weekStartDay as DayOfWeek}
+        currentWeekStart={currentWeekStart}
+        showSettings={showSettings}
+        showRecipeBook={showRecipeBook}
+        showPantryManager={showPantryManager}
+        showShoppingList={showShoppingList}
+        shoppingList={shoppingList}
+        onToggleSettings={() => setShowSettings(true)}
+        onToggleRecipeBook={() => setShowRecipeBook(true)}
+        onTogglePantryManager={() => setShowPantryManager(true)}
+        onToggleShoppingList={() => setShowShoppingList(true)}
+        onNavigateWeek={navigateWeek}
+      />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Sticky Controls Container */}
-        <div className="sticky top-16 z-20 bg-background-theme/80 backdrop-blur-sm -mx-4 px-4 pt-4 pb-2 mb-4 space-y-4">
-          {/* Week Navigation */}
-          <div className="flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-border-theme transition-colors">
-            <button 
-              onClick={() => navigateWeek(-1)}
-              className="p-2 hover:bg-background-theme rounded-full transition-colors"
-            >
-              <ChevronLeft className="w-6 h-6 text-neutral-theme hover:text-primary" />
-            </button>
-            <div className="flex flex-col items-center">
-              <h2 className="text-lg font-bold text-primary">
-                Week of {new Date(currentWeekStart + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
-              </h2>
-              <p className="text-xs text-neutral-theme font-medium uppercase tracking-widest">
-                {(() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const current = new Date(currentWeekStart + 'T00:00:00');
-                  current.setHours(0, 0, 0, 0);
-                  
-                  // Get the configured week start day
-                  const configuredStart = (weekStartDay as DayOfWeek) || 'Monday';
-                  const thisWeeksStartStr = getWeekStart(today, configuredStart);
-                  const thisWeeksStart = new Date(thisWeeksStartStr + 'T00:00:00');
-                  const thisWeeksEnd = new Date(thisWeeksStart);
-                  thisWeeksEnd.setDate(thisWeeksEnd.getDate() + 6);
-                  
-                  if (current.getTime() === thisWeeksStart.getTime()) return 'Current Week';
-                  if (current > today) return 'Future Week';
-                  return 'Past Week';
-                })()}
-              </p>
-            </div>
-            <button 
-              onClick={() => navigateWeek(1)}
-              className="p-2 hover:bg-background-theme rounded-full transition-colors"
-            >
-              <ChevronRight className="w-6 h-6 text-neutral-theme hover:text-primary" />
-            </button>
-          </div>
-
-          {/* Suggest a Recipe Button */}
-          <div>
-            <button
-              onClick={() => {
-                setActiveDayForAI(null);
-                setActiveRecipeIndex(null);
-                setShowPantryModal(true);
-              }}
-              disabled={isSuggestingRecipe}
-              className="w-full py-4 bg-primary text-background-theme rounded-2xl font-bold hover:bg-secondary hover:text-primary transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {isSuggestingRecipe ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Sparkles className="w-5 h-5" />
-              )}
-              Suggest a Recipe
-            </button>
-          </div>
-        </div>
+        <WeekControls 
+          currentWeekStart={currentWeekStart}
+          weekStartDay={weekStartDay as DayOfWeek}
+          onNavigateWeek={navigateWeek}
+          onSuggestRecipe={() => {
+            setActiveDayForAI(null);
+            setActiveRecipeIndex(null);
+            setAiShowPantryModal(true);
+          }}
+          isSuggestingRecipe={isSuggestingRecipe}
+        />
 
         <div className="space-y-4">
           {orderedDays.map((day) => (
@@ -411,7 +322,7 @@ export default function App() {
               addRecipeToDay={addRecipeToDay}
               updateRecipe={updateRecipe}
               removeRecipe={removeRecipe}
-saveToRecipeBook={saveToRecipeBook}
+              saveToRecipeBook={saveToRecipeBook}
               bookRecipes={recipes}
               addIngredient={addIngredient}
               updateIngredient={handleUpdateIngredient}
@@ -433,14 +344,13 @@ saveToRecipeBook={saveToRecipeBook}
               applyRecipeToDay={applyRecipeToDay}
               onImportRecipe={(day) => {
                 setActiveDayForAI(day);
-                setShowImportModal(true);
+                setAiShowImportModal(true);
               }}
               onDragStart={(day, index) => setDragSource({ day, index })}
               onDrop={(targetDay, targetIndex) => {
                 if (!dragSource) return;
                 
                 if (dragSource.day === targetDay) {
-                  // Reorder within same day
                   const sourceIndex = dragSource.index;
                   const newRecipes = [...plan[targetDay].recipes];
                   const [removed] = newRecipes.splice(sourceIndex, 1);
@@ -451,7 +361,6 @@ saveToRecipeBook={saveToRecipeBook}
                   }));
                   saveDayPlan(targetDay, { recipes: newRecipes, instructions: plan[targetDay].instructions || [] });
                 } else {
-                  // Move between days
                   const sourceRecipe = plan[dragSource.day].recipes[dragSource.index];
                   const newSourceRecipes = plan[dragSource.day].recipes.filter((_, i) => i !== dragSource.index);
                   const newTargetRecipes = [...plan[targetDay].recipes];
@@ -493,7 +402,7 @@ saveToRecipeBook={saveToRecipeBook}
         applyRecipeToDay={applyRecipeToDay}
         expandedDay={expandedDay}
         pantryItems={pantryItems}
-        onOpenImport={() => setShowImportModal(true)}
+        onOpenImport={() => setAiShowImportModal(true)}
         onOpenNewRecipe={() => {
           setEditingRecipe(null);
           setShowRecipeEditor(true);
@@ -571,15 +480,15 @@ saveToRecipeBook={saveToRecipeBook}
       />
 
       <ImportRecipeModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
+        isOpen={aiShowImportModal}
+        onClose={() => setAiShowImportModal(false)}
         onImport={importRecipe}
         isImporting={isImporting}
       />
 
       <AIContextModal
-        isOpen={showPantryModal}
-        onClose={() => setShowPantryModal(false)}
+        isOpen={aiShowPantryModal}
+        onClose={() => setAiShowPantryModal(false)}
         pantryContext={pantryContext}
         setPantryContext={setPantryContext}
         dietaryOptions={dietaryOptions}
@@ -604,8 +513,8 @@ saveToRecipeBook={saveToRecipeBook}
       />
 
       <SuggestedRecipeModal
-        isOpen={showSuggestedRecipeModal}
-        onClose={() => setShowSuggestedRecipeModal(false)}
+        isOpen={aiShowSuggestedModal}
+        onClose={() => setAiShowSuggestedModal(false)}
         suggestedRecipes={suggestedRecipes}
         saveToRecipeBook={saveToRecipeBook}
         applyRecipeToDay={applyRecipeToDay}
@@ -626,10 +535,10 @@ saveToRecipeBook={saveToRecipeBook}
       )}
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-4 sm:hidden">
+      <div className="fixed bottom-6 right-6 flex flex-col gap-4 sm:hidden z-50">
         <button 
           onClick={() => setShowRecipeBook(true)}
-          className="w-14 h-14 bg-surface text-primary rounded-full shadow-xl flex items-center justify-center border border-border-theme active:scale-90"
+          className="w-14 h-14 bg-primary text-background-theme rounded-full shadow-xl flex items-center justify-center hover:bg-secondary hover:text-primary transition-all active:scale-90"
         >
           <BookOpen className="w-6 h-6" />
         </button>

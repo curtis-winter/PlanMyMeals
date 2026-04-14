@@ -303,14 +303,14 @@ export default function MobileShoppingList() {
 
         {/* Fixed Bottom Actions */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme space-y-3">
-          <div className="flex w-full items-end gap-2">
-            <div className="flex w-full">
+          <div className="flex w-full justify-center">
+            <div className="flex-1 max-w-full">
               <Autocomplete
                 value={newItemName}
                 onChange={setNewItemName}
                 onSelect={handleAutocompleteSelect}
                 placeholder="Add item to list (press Enter to add)"
-                className="flex-1 min-w-0 h-[3rem]"
+                className="w-full h-[3rem]"
               />
             </div>
           </div>

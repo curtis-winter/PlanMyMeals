@@ -213,18 +213,18 @@ export default function MobilePantry() {
       </main>
 
          <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-border-theme">
-           <div className="flex w-full items-end gap-2">
-             <div className="flex w-full">
-               <Autocomplete
-                 value={newItemName}
-                 onChange={setNewItemName}
-                 onSelect={handleAutocompleteSelect}
-                 placeholder="Item name (e.g. Milk) (press Enter to add)"
-                 className="flex-1 min-w-0 h-[3rem]"
-               />
-             </div>
-           </div>
-         </div>
+          <div className="flex w-full justify-center">
+            <div className="flex-1 max-w-full">
+              <Autocomplete
+                value={newItemName}
+                onChange={setNewItemName}
+                onSelect={handleAutocompleteSelect}
+                placeholder="Item name (e.g. Milk) (press Enter to add)"
+                className="w-full h-[3rem]"
+              />
+            </div>
+          </div>
+        </div>
     </div>
   );
 }
