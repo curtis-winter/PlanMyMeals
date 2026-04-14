@@ -48,7 +48,7 @@ onToggleShoppingList,
   onNavigateWeek
 }: HeaderProps) {
   return (
-    <header className={`border-b sticky top-0 z-30 ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
+    <header className={`border-b fixed top-0 left-0 right-0 z-50 ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
       <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2 shrink-0">
           <button 
@@ -98,7 +98,7 @@ onToggleShoppingList,
             {shoppingList.length > 0 && (
               <span 
                 id="badge-shopping-list"
-                className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold ${isLocalHost ? 'bg-red-800 text-white' : 'bg-accent-theme text-black'}`}
+                className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold bg-accent-theme text-black`}
                 style={{ transform: 'none', transition: 'none' }}
               >
                 {shoppingList.length}

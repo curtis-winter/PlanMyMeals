@@ -295,7 +295,7 @@ export default function App() {
         onNavigateWeek={navigateWeek}
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 pb-8 overflow-y-auto h-[calc(100vh-64px)]">
         <WeekControls 
           currentWeekStart={currentWeekStart}
           weekStartDay={weekStartDay as DayOfWeek}
@@ -550,7 +550,7 @@ export default function App() {
         >
           <ShoppingCart className="w-6 h-6" />
           {shoppingList.length > 0 && (
-            <span id="fab-badge" className="absolute -top-1 -right-1 bg-accent-theme text-primary text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-surface font-bold">
+            <span id="fab-badge" className="absolute -top-1 -right-1 bg-accent-theme text-black text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-surface font-bold">
               {shoppingList.length}
             </span>
           )}
