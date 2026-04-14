@@ -122,6 +122,7 @@ export function useAI(
           })
         });
         const data = await res.json();
+        console.log('[useAI] Received data:', JSON.stringify(data).slice(0, 500));
         if (data.error) throw new Error(data.error);
 
         // More robust extraction of recipes from the AI response

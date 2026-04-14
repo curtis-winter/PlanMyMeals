@@ -659,13 +659,15 @@ No extra text.`;
     }
   });
 
-   app.post("/api/ai/suggest-recipe", async (req, res) => {
-     const { pantryContext, additionalInstructions, dietaryOptions, recipeCount, useDifferentProteins, plannedRecipes, ollama_url } = req.body;
-     try {
-       const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
-       const TIMEOUT = getOllamaTimeout('ollama_timeout_suggest', 60000);
+app.post("/api/ai/suggest-recipe", async (req, res) => {
+      const { pantryContext, additionalInstructions, dietaryOptions, recipeCount, useDifferentProteins, plannedRecipes, ollama_url } = req.body;
+      try {
+        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
+        console.log('[suggest-recipe] recipeCount:', recipeCount);
+        
+        const TIMEOUT = getOllamaTimeout('ollama_timeout_suggest', 60000);
        
-       const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'suggest_prompt'").get() as {value?: string} | undefined;
+        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'suggest_prompt'").get() as {value?: string} | undefined;
        const count = parseInt(recipeCount) || 1;
        let finalPrompt = '';
        
@@ -673,26 +675,11 @@ No extra text.`;
          ? `\n- DO NOT suggest recipes similar to these already planned: ${plannedRecipes.join(', ')}.`
          : "";
 
-       if (count > 1) {
-         const basePrompt = promptRow?.value || `Suggest ${count} unique and distinct recipes based on these ingredients I have: {{pantryContext}}. 
+if (count > 1) {
+          const basePrompt = `List ${count} recipes. Return JSON like: [{"name":"Recipe Name","yield":"4 servings","ingredients":[{"name":"flour","amount":"2 cups","preparation":null}],"directions":["Step 1"]}]`;
 
-Dietary Preferences: {{dietaryOptions}}
-Additional Instructions: {{additionalInstructions}}
 
-Guidelines:
-- Focus on simple recipes.
-- Each recipe should be unique and distinct.{{uniqueConstraint}}
-- You do not need to use all provided ingredients.
-- Prioritize using the provided ingredients, but you can include common staples or other ingredients not listed if needed.
-{{useDifferentProteins}}`;
-
-         finalPrompt = basePrompt
-           .replace(/\{\{pantryContext\}\}/g, pantryContext || "nothing specific")
-           .replace(/\{\{dietaryOptions\}\}/g, dietaryOptions || "none")
-           .replace(/\{\{additionalInstructions\}\}/g, additionalInstructions || "none")
-           .replace(/\{\{uniqueConstraint\}\}/g, uniqueConstraint)
-           .replace(/\{\{useDifferentProteins\}\}/g, useDifferentProteins ? "- Minimize the overlap in meat protein used in the recipes." : "")
-           + "\n\n" + RECIPES_OUTPUT_FORMAT;
+finalPrompt = basePrompt;
        } else {
          const basePrompt = promptRow?.value || `Suggest a recipe based on: {{pantryContext}}. 
 
@@ -717,6 +704,8 @@ Additional Instructions: {{additionalInstructions}}{{uniqueConstraint}}`;
       });
 
       let responseText = response.data.response;
+      console.log('[suggest-recipe] response type:', Array.isArray(responseText) ? 'array' : typeof responseText, 'isArray:', Array.isArray(JSON.parse(responseText)));
+      
       // Clean up markdown backticks if present
       if (responseText.includes("```")) {
         responseText = responseText.replace(/```json\n?|```/g, "").trim();
