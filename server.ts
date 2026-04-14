@@ -663,7 +663,6 @@ app.post("/api/ai/suggest-recipe", async (req, res) => {
       const { pantryContext, additionalInstructions, dietaryOptions, recipeCount, useDifferentProteins, plannedRecipes, ollama_url } = req.body;
       try {
         const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
-        console.log('[suggest-recipe] recipeCount:', recipeCount);
         
         const TIMEOUT = getOllamaTimeout('ollama_timeout_suggest', 60000);
        
@@ -704,7 +703,6 @@ Additional Instructions: {{additionalInstructions}}{{uniqueConstraint}}`;
       });
 
       let responseText = response.data.response;
-      console.log('[suggest-recipe] response type:', Array.isArray(responseText) ? 'array' : typeof responseText, 'isArray:', Array.isArray(JSON.parse(responseText)));
       
       // Clean up markdown backticks if present
       if (responseText.includes("```")) {
