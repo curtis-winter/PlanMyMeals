@@ -717,15 +717,31 @@ Additional Instructions: {{additionalInstructions}}{{uniqueConstraint}}`;
     }
   });
   
-   app.post("/api/ai/import-recipe", async (req, res) => {
-     const { url, text, ollama_url } = req.body;
-     try {
-       let content = text || "";
-       if (url) {
-         const response = await axios.get(url);
-         // Simple HTML to text
-         content = response.data.replace(/<[^>]*>?/gm, ' ').replace(/\s\s+/g, ' ');
-       }
+app.post("/api/ai/import-recipe", async (req, res) => {
+      const { url, text, ollama_url } = req.body;
+      try {
+        // Handle JSON import directly (prefixed by client)
+        if (text && text.startsWith('JSON_IMPORT:')) {
+          const jsonContent = text.replace('JSON_IMPORT:', '');
+          const parsed = JSON.parse(jsonContent);
+          
+          // If it's an array, return as-is; if it's a single object, wrap in array
+          if (Array.isArray(parsed)) {
+            res.json(parsed);
+          } else if (parsed && typeof parsed === 'object' && parsed.name) {
+            res.json([parsed]);
+          } else {
+            res.status(400).json({ error: 'Invalid JSON format' });
+          }
+          return;
+        }
+
+        let content = text || "";
+        if (url) {
+          const response = await axios.get(url);
+          // Simple HTML to text
+          content = response.data.replace(/<[^>]*>?/gm, ' ').replace(/\s\s+/g, ' ');
+        }
        
        const { url: OLLAMA_URL, model: OLLAMA_MODEL } = getOllamaConfig(ollama_url);
        const promptRow = db.prepare("SELECT value FROM settings WHERE key = 'import_prompt'").get() as {value?: string} | undefined;

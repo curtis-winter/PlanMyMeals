@@ -71,19 +71,21 @@ export function useAI(
       const result = await res.json();
       if (result.error) throw new Error(result.error);
 
-      setSuggestedRecipes([{
-        name: result.name,
-        yield: result.yield || '',
-        ingredients: result.ingredients.map((ing: any) => ({
+      // Handle array response (from JSON import) or single recipe
+      const recipes = Array.isArray(result) ? result : [result];
+      setSuggestedRecipes(recipes.map((r: any) => ({
+        name: r.name || 'Untitled Recipe',
+        yield: r.yield || '',
+        ingredients: (r.ingredients || []).map((ing: any) => ({
           id: generateId(),
           name: ing.name,
           amount: ing.amount,
           preparation: ing.preparation || undefined,
           isAvailable: false
         })),
-        directions: result.directions || [],
+        directions: r.directions || [],
         rating: 0
-      }]);
+      })));
       setShowImportModal(false);
       setShowSuggestedRecipeModal(true);
     } catch (err) {

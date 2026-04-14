@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link, FileText, Upload, Loader2, Sparkles } from 'lucide-react';
+import { Link, FileText, Upload, Loader2, Sparkles, Braces, Copy, Check } from 'lucide-react';
 import { Modal } from './ui/Modal';
 
 interface ImportRecipeModalProps {
@@ -9,16 +9,46 @@ interface ImportRecipeModalProps {
   isImporting: boolean;
 }
 
+const SAMPLE_JSON = `[{
+  "name": "Pancakes",
+  "yield": "4 servings",
+  "tags": ["breakfast", "easy"],
+  "ingredients": [
+    {"name": "flour", "amount": "2 cups", "preparation": null},
+    {"name": "milk", "amount": "1.5 cups", "preparation": null},
+    {"name": "egg", "amount": "1", "preparation": "beaten"}
+  ],
+  "directions": ["Mix dry ingredients", "Add wet ingredients", "Cook on griddle"]
+},
+{
+  "name": "Avocado Toast",
+  "yield": "2 servings",
+  "tags": ["breakfast", "quick", "healthy"],
+  "ingredients": [
+    {"name": "bread", "amount": "2 slices", "preparation": "toasted"},
+    {"name": "avocado", "amount": "1", "preparation": "mashed"},
+    {"name": "salt", "amount": "pinch", "preparation": null}
+  ],
+  "directions": ["Toast the bread", "Mash avocado with salt", "Spread on toast"]
+}]`;
+
 export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
   isOpen,
   onClose,
   onImport,
   isImporting
 }) => {
-  const [tab, setTab] = useState<'url' | 'text'>('url');
+  const [tab, setTab] = useState<'url' | 'text' | 'json'>('url');
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopySample = () => {
+    navigator.clipboard.writeText(SAMPLE_JSON);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,8 +67,13 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
     e.preventDefault();
     if (tab === 'url' && !url) return;
     if (tab === 'text' && !text) return;
+    if (tab === 'json' && !text) return;
 
-    await onImport(tab === 'url' ? { url } : { text });
+    if (tab === 'json') {
+      await onImport({ text: `JSON_IMPORT:${text}` });
+    } else {
+      await onImport(tab === 'url' ? { url } : { text });
+    }
     setUrl('');
     setText('');
   };
@@ -61,6 +96,11 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
               <Loader2 className="w-5 h-5 animate-spin" />
               Processing...
             </>
+          ) : tab === 'json' ? (
+            <>
+              <Upload className="w-5 h-5" />
+              Import JSON
+            </>
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
@@ -78,7 +118,7 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
               tab === 'url' ? 'text-primary border-b-2 border-primary bg-surface' : 'text-neutral-theme hover:text-primary'
             }`}
           >
-            <Link className="w-4 h-4" /> Website URL
+            <Link className="w-4 h-4" /> URL
           </button>
           <button
             onClick={() => setTab('text')}
@@ -86,7 +126,15 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
               tab === 'text' ? 'text-primary border-b-2 border-primary bg-surface' : 'text-neutral-theme hover:text-primary'
             }`}
           >
-            <FileText className="w-4 h-4" /> Text / File
+            <FileText className="w-4 h-4" /> Text
+          </button>
+          <button
+            onClick={() => setTab('json')}
+            className={`flex-1 py-3 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+              tab === 'json' ? 'text-primary border-b-2 border-primary bg-surface' : 'text-neutral-theme hover:text-primary'
+            }`}
+          >
+            <Braces className="w-4 h-4" /> JSON
           </button>
         </div>
 
@@ -102,6 +150,29 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com/recipe"
                 className="w-full px-4 py-3 rounded-xl bg-surface border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-primary"
+                required
+              />
+            </div>
+          ) : tab === 'json' ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-neutral-theme">
+                  Paste JSON array of recipes. Each recipe should have name, yield, tags (optional), ingredients (array), and directions (array).
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCopySample}
+                  className="text-xs font-bold text-primary hover:text-secondary transition-colors flex items-center gap-1"
+                >
+                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied ? 'Copied!' : 'Copy Sample'}
+                </button>
+              </div>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder='[{"name":"Recipe 1","yield":"4 servings","ingredients":[{"name":"flour","amount":"2 cups","preparation":null}],"directions":["Step 1"]}]'
+                className="w-full h-48 px-4 py-3 rounded-xl bg-surface border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none text-sm text-primary font-mono"
                 required
               />
             </div>
