@@ -81,7 +81,7 @@ export function Header({
           </div>
           <h1 className={`font-bold text-xl tracking-tight ${isLocalHost ? 'text-white' : 'text-primary'}`}>MyMealPlan</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-nowrap">
           {isLocalHost && buildNumber > 0 && (
             <span className="bg-white text-red-600 px-3 py-1 rounded-full text-sm font-bold">
               Build #{buildNumber}
