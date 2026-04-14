@@ -16,6 +16,7 @@ import { useOllamaServers } from './hooks/useOllamaServers';
 import { useAI } from './hooks/useAI';
 import { useBuildInfo } from './hooks/useBuildInfo';
 import { useModalState } from './hooks/useModalState';
+import { useShoppingList } from './hooks/useShoppingList';
 
 // Components
 import { ShoppingListModal } from './components/ShoppingListModal';
@@ -99,6 +100,11 @@ export default function App() {
     setPlan,
     saveDayPlan
   } = useMealPlan(pantryItems, weekStartDay as DayOfWeek);
+
+  const { shoppingList: fullShoppingList, customItems } = useShoppingList();
+
+  // Combine recipe items + custom items for badge count
+  const shoppingListCount = fullShoppingList.length + customItems.length;
 
   const {
     recipes,
@@ -287,7 +293,8 @@ export default function App() {
         showRecipeBook={showRecipeBook}
         showPantryManager={showPantryManager}
         showShoppingList={showShoppingList}
-        shoppingList={shoppingList}
+        shoppingList={fullShoppingList}
+        shoppingListCount={shoppingListCount}
         onToggleSettings={() => setShowSettings(true)}
         onToggleRecipeBook={() => setShowRecipeBook(true)}
         onTogglePantryManager={() => setShowPantryManager(true)}
@@ -384,7 +391,7 @@ export default function App() {
       <ShoppingListModal 
         isOpen={showShoppingList} 
         onClose={() => setShowShoppingList(false)} 
-        shoppingList={shoppingList} 
+shoppingList={fullShoppingList}
         onMarkAsAvailable={(name) => savePantryItem({ name })}
         onAddItem={(name) => {
           const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
@@ -551,7 +558,7 @@ export default function App() {
           <ShoppingCart className="w-6 h-6" />
           {shoppingList.length > 0 && (
             <span id="fab-badge" className="absolute -top-1 -right-1 bg-accent-theme text-black text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-surface font-bold">
-              {shoppingList.length}
+              {shoppingListCount}
             </span>
           )}
         </button>
