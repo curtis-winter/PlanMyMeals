@@ -600,10 +600,11 @@ Output ONLY valid JSON array, no other text.`;
 
   const INGREDIENTS_FORMAT = `\n\nOutput ONLY a JSON array of objects with "name", "amount", and "preparation" keys. Example: [{"name": "Chicken", "amount": "500g", "preparation": "cubed"}]. If an ingredient has no preparation method, use null for that field. No extra text.`;
 
-  const RECIPE_OUTPUT_FORMAT = `Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings"), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. No extra text.`;
+  const RECIPE_OUTPUT_FORMAT = `Output ONLY a valid JSON object with "name", "yield" (string, e.g. "4 servings"), "tags" (optional array of strings), "ingredients" (array of {name, amount, preparation}), and "directions" (array of strings) keys. If an ingredient has no preparation method, use null for that field. If no tags, omit the field. No extra text.`;
   const RECIPES_OUTPUT_FORMAT = `Output ONLY a valid JSON array of objects. Each object MUST have:
 - "name": (string)
 - "yield": (string, e.g. "4 servings")
+- "tags": (optional array of strings)
 - "ingredients": (array of {name, amount, preparation})
 - "directions": (array of strings)
 

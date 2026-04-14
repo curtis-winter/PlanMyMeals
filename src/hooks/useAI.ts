@@ -76,6 +76,7 @@ export function useAI(
       setSuggestedRecipes(recipes.map((r: any) => ({
         name: r.name || 'Untitled Recipe',
         yield: r.yield || '',
+        tags: r.tags || [],
         ingredients: (r.ingredients || []).map((ing: any) => ({
           id: generateId(),
           name: ing.name,
@@ -176,10 +177,10 @@ export function useAI(
           return {
             name,
             yield: yieldAmount,
+            tags: r.tags || ['AI'],
             ingredients,
             directions,
-            rating: 0,
-            tags: ['AI']
+            rating: 0
           };
         });
 

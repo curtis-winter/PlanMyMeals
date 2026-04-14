@@ -43,6 +43,7 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
   const [text, setText] = useState('');
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCopySample = () => {
     navigator.clipboard.writeText(SAMPLE_JSON);
@@ -59,6 +60,19 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
       const content = event.target?.result as string;
       setText(content);
       setTab('text');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setText(content);
+      setTab('json');
     };
     reader.readAsText(file);
   };
@@ -157,16 +171,32 @@ export const ImportRecipeModal: React.FC<ImportRecipeModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-neutral-theme">
-                  Paste JSON array of recipes. Each recipe should have name, yield, tags (optional), ingredients (array), and directions (array).
+                  Paste JSON or upload a .json file with array of recipes. Each recipe should have name, yield, tags (optional), ingredients (array), and directions (array).
                 </p>
-                <button
-                  type="button"
-                  onClick={handleCopySample}
-                  className="text-xs font-bold text-primary hover:text-secondary transition-colors flex items-center gap-1"
-                >
-                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copied ? 'Copied!' : 'Copy Sample'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => jsonFileInputRef.current?.click()}
+                    className="text-xs font-bold text-primary hover:text-secondary transition-colors flex items-center gap-1"
+                  >
+                    <Upload className="w-3 h-3" /> Upload
+                  </button>
+                  <input
+                    type="file"
+                    ref={jsonFileInputRef}
+                    onChange={handleJsonFileChange}
+                    accept=".json"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopySample}
+                    className="text-xs font-bold text-primary hover:text-secondary transition-colors flex items-center gap-1"
+                  >
+                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copied ? 'Copied!' : 'Copy Sample'}
+                  </button>
+                </div>
               </div>
               <textarea
                 value={text}
