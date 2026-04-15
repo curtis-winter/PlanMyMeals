@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { BookOpen, ShoppingCart } from 'lucide-react';
-import { DAYS_OF_WEEK, DayOfWeek, Ingredient, Recipe } from './types';
+import { DayOfWeek, Ingredient, Recipe } from './types';
 import { getOrderedDays, getDayFromOffset, getWeekEnd, isSameDay, isDateInRange, getDayIndexFromDate } from './utils/date';
 
 // Hooks
@@ -167,8 +167,11 @@ export default function App() {
   const { buildNumber } = useBuildInfo();
   const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const findPantryItem = (name: string) => 
+    pantryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+  const capitalize = (str: string) => 
+    str.trim().charAt(0).toUpperCase() + str.trim().slice(1);
 
   const orderedDays = React.useMemo(() => 
     getOrderedDays(weekStartDay as DayOfWeek), 
@@ -180,6 +183,8 @@ export default function App() {
   };
 
   const isToday = (day: DayOfWeek) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const dayDate = getDayDate(day);
     return isSameDay(dayDate, today);
   };
@@ -187,6 +192,9 @@ export default function App() {
   const [expandedDay, setExpandedDay] = useState<DayOfWeek | null>(null);
 
   React.useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     if (orderedDays.length > 0 && currentWeekStart) {
       const weekStartDate = getDayFromOffset(currentWeekStart, 0);
       const weekEndDate = getWeekEnd(currentWeekStart);
@@ -207,7 +215,7 @@ export default function App() {
     if (isAvailable) {
       savePantryItem({ name });
     } else {
-      const item = pantryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
+      const item = findPantryItem(name);
       if (item) {
         removePantryItem(item.id);
       }
@@ -244,10 +252,39 @@ export default function App() {
   };
 
   const handleUseIngredient = (name: string) => {
-    const item = pantryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const item = findPantryItem(name);
     if (item) {
       removePantryItem(item.id);
     }
+  };
+
+  const handleDrop = (targetDay: DayOfWeek, targetIndex: number) => {
+    if (!dragSource) return;
+    
+    if (dragSource.day === targetDay) {
+      const sourceIndex = dragSource.index;
+      const newRecipes = [...plan[targetDay].recipes];
+      const [removed] = newRecipes.splice(sourceIndex, 1);
+      newRecipes.splice(targetIndex, 0, removed);
+      setPlan(prev => ({
+        ...prev,
+        [targetDay]: { ...prev[targetDay], recipes: newRecipes }
+      }));
+      saveDayPlan(targetDay, { recipes: newRecipes, instructions: plan[targetDay].instructions || [] });
+    } else {
+      const sourceRecipe = plan[dragSource.day].recipes[dragSource.index];
+      const newSourceRecipes = plan[dragSource.day].recipes.filter((_, i) => i !== dragSource.index);
+      const newTargetRecipes = [...plan[targetDay].recipes];
+      newTargetRecipes.splice(targetIndex, 0, sourceRecipe);
+      setPlan(prev => ({
+        ...prev,
+        [dragSource.day]: { ...prev[dragSource.day], recipes: newSourceRecipes },
+        [targetDay]: { ...prev[targetDay], recipes: newTargetRecipes }
+      }));
+      saveDayPlan(dragSource.day, { recipes: newSourceRecipes, instructions: plan[dragSource.day].instructions || [] });
+      saveDayPlan(targetDay, { recipes: newTargetRecipes, instructions: plan[targetDay].instructions || [] });
+    }
+    setDragSource(null);
   };
 
   const handleIngredientKeyDown = (e: React.KeyboardEvent, day: DayOfWeek, recipeIndex: number, id: string, type: 'amount' | 'name') => {
@@ -344,34 +381,7 @@ export default function App() {
                 setAiShowImportModal(true);
               }}
               onDragStart={(day, index) => setDragSource({ day, index })}
-              onDrop={(targetDay, targetIndex) => {
-                if (!dragSource) return;
-                
-                if (dragSource.day === targetDay) {
-                  const sourceIndex = dragSource.index;
-                  const newRecipes = [...plan[targetDay].recipes];
-                  const [removed] = newRecipes.splice(sourceIndex, 1);
-                  newRecipes.splice(targetIndex, 0, removed);
-                  setPlan(prev => ({
-                    ...prev,
-                    [targetDay]: { ...prev[targetDay], recipes: newRecipes }
-                  }));
-                  saveDayPlan(targetDay, { recipes: newRecipes, instructions: plan[targetDay].instructions || [] });
-                } else {
-                  const sourceRecipe = plan[dragSource.day].recipes[dragSource.index];
-                  const newSourceRecipes = plan[dragSource.day].recipes.filter((_, i) => i !== dragSource.index);
-                  const newTargetRecipes = [...plan[targetDay].recipes];
-                  newTargetRecipes.splice(targetIndex, 0, sourceRecipe);
-                  setPlan(prev => ({
-                    ...prev,
-                    [dragSource.day]: { ...prev[dragSource.day], recipes: newSourceRecipes },
-                    [targetDay]: { ...prev[targetDay], recipes: newTargetRecipes }
-                  }));
-                  saveDayPlan(dragSource.day, { recipes: newSourceRecipes, instructions: plan[dragSource.day].instructions || [] });
-                  saveDayPlan(targetDay, { recipes: newTargetRecipes, instructions: plan[targetDay].instructions || [] });
-                }
-                setDragSource(null);
-              }}
+              onDrop={handleDrop}
             />
           ))}
         </div>
@@ -384,10 +394,7 @@ export default function App() {
         shoppingList={fullShoppingList}
         customItems={customItems}
         onMarkAsAvailable={(name) => savePantryItem({ name })}
-        onAddItem={(name) => {
-          const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
-          savePantryItem({ name: capitalized });
-        }}
+        onAddItem={(name) => savePantryItem({ name: capitalize(name) })}
         onRemoveCustomItem={removeCustomItem}
       />
 
@@ -432,7 +439,7 @@ export default function App() {
           if (isAvailable) {
             savePantryItem({ name });
           } else {
-            const item = pantryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
+            const item = findPantryItem(name);
             if (item) {
               removePantryItem(item.id);
             }
