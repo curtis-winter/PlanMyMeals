@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { WeeklyPlan, DayOfWeek, Meal, RecipeInstance, Ingredient, DAYS_OF_WEEK, getWeekStart, Recipe, PantryItem, Task } from '../types';
+import { WeeklyPlan, DayOfWeek, Meal, RecipeInstance, Ingredient, DAYS_OF_WEEK, getWeekStart, Recipe, PantryItem, Task, MealPlanRow } from '../types';
 import { generateId } from '../utils/id';
 
 const INITIAL_PLAN: WeeklyPlan = DAYS_OF_WEEK.reduce((acc, day) => {
@@ -30,18 +30,18 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     const fetchPlan = async () => {
       try {
         const res = await fetch(`/api/plan/${currentWeekStart}`);
-        const data = await res.json();
+        const data = await res.json() as MealPlanRow[];
         const newPlan = { ...INITIAL_PLAN };
-        data.forEach((row: any) => {
+        data.forEach((row) => {
           const rawInstructions = JSON.parse(row.instructions || '[]');
-          const instructions = rawInstructions.map((item: any) => {
+          const instructions = rawInstructions.map((item: unknown) => {
             if (typeof item === 'string') {
               return { id: generateId(), text: item, completed: false };
             }
-            return item;
+            return item as Task;
           });
           newPlan[row.day] = {
-            recipes: JSON.parse(row.recipes || '[]'),
+            recipes: JSON.parse(row.recipes || '[]') as RecipeInstance[],
             instructions
           };
         });
@@ -227,22 +227,6 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     saveMeal(day, newMeal, { strategy: 'immediate' });
   };
 
-  const shoppingList = useMemo(() => {
-    const missing: Record<string, string[]> = {};
-    Object.values(plan).forEach((meal: Meal) => {
-      meal.recipes.forEach(recipe => {
-        recipe.ingredients.forEach(ing => {
-          const name = ing.name.trim().toLowerCase();
-          if (!ing.isAvailable && name && !pantryNames.has(name)) {
-            if (!missing[name]) missing[name] = [];
-            if (ing.amount) missing[name].push(ing.amount);
-          }
-        });
-      });
-    });
-    return Object.entries(missing).sort(([a], [b]) => a.localeCompare(b));
-  }, [plan, pantryNames]);
-
   const addInstruction = (day: DayOfWeek) => {
     const newTask: Task = { id: generateId(), text: '', completed: false };
     const newInstructions = [...(plan[day].instructions || []), newTask];
@@ -313,7 +297,6 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
   return {
     plan,
     currentWeekStart,
-    shoppingList,
     addRecipeToDay,
     updateRecipe,
     removeRecipe,

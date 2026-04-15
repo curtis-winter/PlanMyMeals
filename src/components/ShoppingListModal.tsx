@@ -8,8 +8,11 @@ interface ShoppingListModalProps {
   isOpen: boolean;
   onClose: () => void;
   shoppingList: [string, string[]][];
+  customItems: { id: string; name: string }[];
   onMarkAsAvailable: (name: string) => void;
   onAddItem?: (name: string) => void;
+  onUpdateCustomItem?: (id: string, updates: Partial<{ name: string }>) => void;
+  onRemoveCustomItem?: (id: string) => void;
 }
 
 interface CustomItem {
@@ -25,23 +28,32 @@ interface ShoppingItem {
   checked: boolean;
 }
 
-export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, onClose, shoppingList, onMarkAsAvailable, onAddItem }) => {
+export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  shoppingList, 
+  customItems: propCustomItems,
+  onMarkAsAvailable, 
+  onAddItem,
+  onUpdateCustomItem,
+  onRemoveCustomItem
+}) => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [newItemName, setNewItemName] = useState('');
-  const [customItems, setCustomItems] = useState<CustomItem[]>([]);
+  const customItems = propCustomItems;
   const [search, setSearch] = useState('');
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [itemCategories, setItemCategories] = useState<Record<string, string>>({});
 
-  // Load custom items from localStorage
+  // Load custom items from localStorage (only for backwards compatibility)
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !propCustomItems) {
       const saved = localStorage.getItem('shoppingList_customItems');
       if (saved) {
         try {
-          setCustomItems(JSON.parse(saved));
+          // Legacy - but we shouldn't hit this if using props
         } catch {
-          setCustomItems([]);
+          // Ignore
         }
       }
       // Load checked state
@@ -63,15 +75,9 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
         }
       }
     }
-  }, [isOpen]);
+  }, [isOpen, propCustomItems]);
 
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
-
-  // Save custom items to localStorage
-  const saveCustomItems = (items: CustomItem[]) => {
-    setCustomItems(items);
-    localStorage.setItem('shoppingList_customItems', JSON.stringify(items));
-  };
 
   // Save checked state to localStorage
   const saveCheckedState = (state: Record<string, boolean>) => {
@@ -131,23 +137,12 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     return sections;
   }, [filteredItems, itemCategories]);
 
-  // Debug: log AI categories when they update
-  React.useEffect(() => {
-    if (Object.keys(itemCategories).length > 0) {
-      console.log('AI Updated categories:', itemCategories);
-    }
-  }, [itemCategories]);
-
   const sectionOrder = Object.keys(GROCERY_SECTIONS);
 
   const handleAddItem = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (newItemName.trim()) {
-      const newItem: CustomItem = {
-        name: newItemName.trim(),
-        id: Date.now().toString()
-      };
-      saveCustomItems([...customItems, newItem]);
+    if (newItemName.trim() && onAddItem) {
+      onAddItem(newItemName.trim());
       setNewItemName('');
     }
   };
@@ -156,11 +151,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     if (onAddItem) {
       onAddItem(item.name);
     }
-    const newItem: CustomItem = {
-      name: item.name,
-      id: Date.now().toString()
-    };
-    saveCustomItems([...customItems, newItem]);
     setNewItemName('');
     
     // Add to shopping history
@@ -174,7 +164,9 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
   };
 
   const handleRemoveCustomItem = (id: string) => {
-    saveCustomItems(customItems.filter(item => item.id !== id));
+    if (onRemoveCustomItem) {
+      onRemoveCustomItem(id);
+    }
   };
 
   const handleOptimizeCategories = async () => {
@@ -189,7 +181,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
       });
 
       const result = await response.json();
-      console.log('AI optimize result:', result);
       
       if (!response.ok || result.error) {
         console.error('AI optimize failed:', result.error);
@@ -204,7 +195,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
             newCategories[suggestion.name.toLowerCase()] = suggestion.category;
           }
         }
-        console.log('New categories to apply:', newCategories);
         saveItemCategories({ ...itemCategories, ...newCategories });
       }
     } catch (err) {

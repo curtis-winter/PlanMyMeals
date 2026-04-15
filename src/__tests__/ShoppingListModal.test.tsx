@@ -35,6 +35,7 @@ describe('ShoppingListModal', () => {
     isOpen: true,
     onClose: vi.fn(),
     shoppingList: mockShoppingList,
+    customItems: [],
     onMarkAsAvailable: vi.fn(),
   };
 

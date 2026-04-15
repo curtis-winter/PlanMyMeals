@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { BookOpen, ShoppingCart } from 'lucide-react';
 import { DAYS_OF_WEEK, DayOfWeek, Ingredient, Recipe } from './types';
+import { getOrderedDays, getDayFromOffset, getWeekEnd, isSameDay, isDateInRange, getDayIndexFromDate } from './utils/date';
 
 // Hooks
 import { usePantry } from './hooks/usePantry';
@@ -81,7 +82,6 @@ export default function App() {
   const {
     plan,
     currentWeekStart,
-    shoppingList,
     addRecipeToDay,
     updateRecipe,
     removeRecipe,
@@ -101,7 +101,7 @@ export default function App() {
     saveDayPlan
   } = useMealPlan(pantryItems, weekStartDay as DayOfWeek);
 
-  const { shoppingList: fullShoppingList, customItems } = useShoppingList();
+  const { shoppingList: fullShoppingList, customItems, removeCustomItem } = useShoppingList();
 
   // Combine recipe items + custom items for badge count
   const shoppingListCount = fullShoppingList.length + customItems.length;
@@ -170,45 +170,35 @@ export default function App() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const orderedDays = React.useMemo(() => {
-    const startIndex = DAYS_OF_WEEK.indexOf(weekStartDay as DayOfWeek);
-    if (startIndex === -1) return DAYS_OF_WEEK;
-    return [...DAYS_OF_WEEK.slice(startIndex), ...DAYS_OF_WEEK.slice(0, startIndex)];
-  }, [weekStartDay]);
+  const orderedDays = React.useMemo(() => 
+    getOrderedDays(weekStartDay as DayOfWeek), 
+  [weekStartDay]);
 
   const getDayDate = (day: DayOfWeek) => {
-    const startIndex = DAYS_OF_WEEK.indexOf(weekStartDay as DayOfWeek);
-    const dayIndex = DAYS_OF_WEEK.indexOf(day);
-    const offset = (dayIndex - startIndex + 7) % 7;
-    const date = new Date(currentWeekStart + 'T00:00:00');
-    date.setDate(date.getDate() + offset);
-    date.setHours(0, 0, 0, 0);
-    return date;
+    const dayIndex = orderedDays.indexOf(day);
+    return getDayFromOffset(currentWeekStart, dayIndex);
   };
 
   const isToday = (day: DayOfWeek) => {
     const dayDate = getDayDate(day);
-    return dayDate.getTime() === today.getTime();
+    return isSameDay(dayDate, today);
   };
 
   const [expandedDay, setExpandedDay] = useState<DayOfWeek | null>(null);
 
-  // Set initial expanded day to today's day on load, only if current week contains today
   React.useEffect(() => {
     if (orderedDays.length > 0 && currentWeekStart) {
-      const weekStart = new Date(currentWeekStart + 'T00:00:00');
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
+      const weekStartDate = getDayFromOffset(currentWeekStart, 0);
+      const weekEndDate = getWeekEnd(currentWeekStart);
       
-      if (today >= weekStart && today <= weekEnd) {
-        const diff = Math.floor((today.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
-        const dayIndex = ((diff % 7) + 7) % 7;
+      if (isDateInRange(today, weekStartDate, weekEndDate)) {
+        const dayIndex = getDayIndexFromDate(today, weekStartDay as DayOfWeek);
         setExpandedDay(orderedDays[dayIndex]);
       } else {
         setExpandedDay(null);
       }
     }
-  }, [orderedDays, currentWeekStart]);
+  }, [orderedDays, currentWeekStart, weekStartDay]);
 
   const [dragSource, setDragSource] = useState<{ day: DayOfWeek; index: number } | null>(null);
 
@@ -237,7 +227,7 @@ export default function App() {
   };
 
   const handleSaveRecipeFromEditor = (recipe: Partial<Recipe>) => {
-    saveToRecipeBook(recipe as any);
+    saveToRecipeBook(recipe as Recipe);
     
     recipe.ingredients?.forEach(ing => {
       if (ing.isAvailable && ing.name) {
@@ -391,12 +381,14 @@ export default function App() {
       <ShoppingListModal 
         isOpen={showShoppingList} 
         onClose={() => setShowShoppingList(false)} 
-shoppingList={fullShoppingList}
+        shoppingList={fullShoppingList}
+        customItems={customItems}
         onMarkAsAvailable={(name) => savePantryItem({ name })}
         onAddItem={(name) => {
           const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
           savePantryItem({ name: capitalized });
         }}
+        onRemoveCustomItem={removeCustomItem}
       />
 
       <RecipeBookModal
@@ -556,7 +548,7 @@ shoppingList={fullShoppingList}
           className="w-14 h-14 bg-primary text-background-theme rounded-full shadow-xl flex items-center justify-center hover:bg-secondary hover:text-primary transition-all active:scale-90 relative"
         >
           <ShoppingCart className="w-6 h-6" />
-          {shoppingList.length > 0 && (
+          {shoppingListCount > 0 && (
             <span id="fab-badge" className="absolute -top-1 -right-1 bg-accent-theme text-black text-[10px] w-6 h-6 flex items-center justify-center rounded-full border-2 border-surface font-bold">
               {shoppingListCount}
             </span>

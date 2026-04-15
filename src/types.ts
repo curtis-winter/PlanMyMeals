@@ -78,3 +78,55 @@ export function getWeekStart(date: Date, startDay: DayOfWeek = 'Monday'): string
   d.setDate(d.getDate() - diff);
   return d.toISOString().split('T')[0];
 }
+
+export interface MealPlanRow {
+  week_start: string;
+  day: DayOfWeek;
+  recipes: string;
+  instructions: string;
+}
+
+export interface RecipeRow {
+  id: number;
+  name: string;
+  ingredients: string;
+  directions: string;
+  rating: number;
+  tags: string;
+  yield: string;
+}
+
+export interface PantryRow {
+  id: number;
+  name: string;
+  category: string;
+}
+
+export interface CleanupRecipeResponse {
+  name: string;
+  yield?: string;
+  ingredients: Array<{ name: string; amount: string; preparation?: string }>;
+  directions: string[];
+}
+
+export interface ImportRecipeResponse {
+  name: string;
+  yield?: string;
+  tags?: string[];
+  ingredients: Array<{ name: string; amount: string; preparation?: string }>;
+  directions: string[];
+}
+
+export interface GeneratedIngredient {
+  name: string;
+  amount: string;
+  preparation?: string;
+}
+
+export interface OllamaModel {
+  name: string;
+}
+
+export interface OllamaModelsResponse {
+  models: OllamaModel[];
+}

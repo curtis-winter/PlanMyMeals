@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Plus, Trash2, CheckCircle2, Circle, Save, UtensilsCrossed, Play, Sparkles, Check, RotateCcw, Tag as TagIcon } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Circle, Save, UtensilsCrossed, Play, Sparkles, Check, RotateCcw } from 'lucide-react';
 import { Recipe, Ingredient } from '../types';
 import { generateId } from '../utils/id';
 import { Modal } from './ui/Modal';
+import { TagInput } from './ui/TagInput';
 
 interface RecipeEditorModalProps {
   isOpen: boolean;
@@ -37,7 +38,6 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [directions, setDirections] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCleanupInstructionsModal, setShowCleanupInstructionsModal] = useState(false);
   const [cleanupInstructions, setCleanupInstructions] = useState('');
@@ -50,7 +50,6 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
       setIngredients(initialRecipe?.ingredients || []);
       setDirections(initialRecipe?.directions || []);
       setTags(initialRecipe?.tags || []);
-      setNewTag('');
       setCleanupInstructions('');
       setShowDeleteConfirm(false);
       setPreviewRecipe(null);
@@ -126,17 +125,6 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
     onClose();
   };
 
-  const addTag = () => {
-    if (newTag && !tags.includes(newTag)) {
-      setTags([...tags, newTag]);
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
   const handleDelete = () => {
     if (initialRecipe?.id && onDelete) {
       onDelete(initialRecipe.id);
@@ -171,26 +159,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
     setPreviewRecipe(null);
   };
 
-  const handleTagKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (filteredTagSuggestions.length > 0) {
-        const suggestion = filteredTagSuggestions[0];
-        if (!tags.includes(suggestion)) {
-          setTags([...tags, suggestion]);
-        }
-        setNewTag('');
-      } else {
-        addTag();
-      }
-    }
-  };
-
   const isAlreadySaved = existingRecipes.some(r => r.name.toLowerCase() === name.toLowerCase() && r.id !== initialRecipe?.id);
-
-  const filteredTagSuggestions = allTags.filter(t => 
-    t.toLowerCase().includes(newTag.toLowerCase()) && !tags.includes(t)
-  ).slice(0, 5);
 
   return (
     <>
@@ -301,54 +270,13 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
           </div>
 
           <div className="space-y-4">
-            <label className="block text-xs font-bold text-neutral-theme uppercase tracking-wider">Tags</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {tags.map(tag => (
-                <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold">
-                  <TagIcon className="w-3 h-3" />
-                  {tag}
-                  <button onClick={() => removeTag(tag)} className="hover:text-secondary">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="relative">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  placeholder="Add a tag..."
-                  className="flex-1 px-4 py-2 rounded-xl bg-surface border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm text-primary"
-                />
-                <button
-                  onClick={addTag}
-                  className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary hover:text-background-theme transition-all"
-                >
-                  Add
-                </button>
-              </div>
-              
-              {newTag && filteredTagSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border-theme rounded-xl shadow-xl z-50 overflow-hidden">
-                  {filteredTagSuggestions.map(suggestion => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => {
-                        setTags([...tags, suggestion]);
-                        setNewTag('');
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-background-theme text-primary transition-colors border-b border-border-theme last:border-0"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TagInput
+              tags={tags}
+              onAddTag={(tag) => !tags.includes(tag) && setTags([...tags, tag])}
+              onRemoveTag={(tag) => setTags(tags.filter(t => t !== tag))}
+              suggestions={allTags}
+              placeholder="Add a tag..."
+            />
           </div>
 
           <div className="space-y-4">

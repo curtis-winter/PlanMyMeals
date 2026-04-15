@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from '../utils/icons';
 import { Recipe, DayOfWeek } from '../types';
 import { Modal } from './ui/Modal';
+import { TagInput } from './ui/TagInput';
 
 interface SuggestedRecipeModalProps {
   isOpen: boolean;
@@ -22,7 +23,6 @@ export const SuggestedRecipeModal: React.FC<SuggestedRecipeModalProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [recipeTags, setRecipeTags] = useState<Record<number, string[]>>({});
-  const [newTag, setNewTag] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -32,24 +32,22 @@ export const SuggestedRecipeModal: React.FC<SuggestedRecipeModalProps> = ({
         initialTags[idx] = r.tags || [];
       });
       setRecipeTags(initialTags);
-      setNewTag('');
     }
   }, [isOpen, suggestedRecipes]);
 
   const currentRecipe = suggestedRecipes[currentIndex];
   const currentTags = recipeTags[currentIndex] || [];
 
-  const addTag = () => {
-    if (newTag && !currentTags.includes(newTag)) {
+  const handleAddTag = (tag: string) => {
+    if (!currentTags.includes(tag)) {
       setRecipeTags(prev => ({
         ...prev,
-        [currentIndex]: [...currentTags, newTag]
+        [currentIndex]: [...currentTags, tag]
       }));
-      setNewTag('');
     }
   };
 
-  const removeTag = (tagToRemove: string) => {
+  const handleRemoveTag = (tagToRemove: string) => {
     setRecipeTags(prev => ({
       ...prev,
       [currentIndex]: currentTags.filter(tag => tag !== tagToRemove)
@@ -164,36 +162,16 @@ footer={
                <span>{currentRecipe.directions.length} steps</span>
              </div>
            </div>
-           <div className="space-y-4">
-             <h5 className="font-bold text-primary uppercase text-xs tracking-wider">Tags</h5>
-             <div className="flex flex-wrap gap-2">
-               {currentTags.map(tag => (
-                 <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold">
-                   <Icons.Tag className="w-3 h-3" />
-                   {tag}
-                   <button onClick={() => removeTag(tag)} className="hover:text-secondary">
-                     <Icons.X className="w-3 h-3" />
-                   </button>
-                 </span>
-               ))}
-             </div>
-             <div className="flex gap-2">
-               <input
-                 type="text"
-                 value={newTag}
-                 onChange={(e) => setNewTag(e.target.value)}
-                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                 placeholder="Add a tag..."
-                 className="flex-1 px-3 py-1.5 rounded-xl bg-background-theme border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-xs text-primary"
-               />
-               <button
-                 onClick={addTag}
-                 className="px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-[10px] font-bold hover:bg-primary/20 transition-all"
-               >
-                 Add
-               </button>
-             </div>
-           </div>
+<div className="space-y-4">
+              <h5 className="font-bold text-primary uppercase text-xs tracking-wider">Tags</h5>
+              <TagInput
+                tags={currentTags}
+                onAddTag={handleAddTag}
+                onRemoveTag={handleRemoveTag}
+                placeholder="Add a tag..."
+                inputClassName="px-3 py-1.5 text-xs"
+              />
+            </div>
            <div className="space-y-4">
              <h5 className="font-bold text-primary uppercase text-xs tracking-wider">Ingredients</h5>
              <ul className="space-y-2">

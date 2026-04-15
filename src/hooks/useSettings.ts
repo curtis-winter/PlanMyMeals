@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { OllamaModelsResponse } from '../types';
 
 export function useSettings() {
   const [ollamaSettings, setOllamaSettings] = useState({ url: '', model: '' });
@@ -96,7 +97,7 @@ export function useSettings() {
       if (res.ok) {
         setTestStatus('success');
         if (data.models) {
-          const modelNames = data.models.map((m: any) => m.name);
+          const modelNames = data.models.map((m) => m.name);
           setAvailableModels(modelNames);
         }
       } else {

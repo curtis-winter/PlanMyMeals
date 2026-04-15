@@ -1,16 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { usePantry } from './usePantry';
 import { useMealPlan } from './useMealPlan';
+import { generateId } from '../utils/id';
+import { WeeklyPlan, Meal, RecipeInstance, Ingredient } from '../types';
 
 export interface CustomItem {
   id: string;
   name: string;
   amount?: string;
   category?: string;
-}
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
 export function useShoppingList() {
@@ -39,9 +37,9 @@ export function useShoppingList() {
     const missing: Record<string, string[]> = {};
     const pantryNames = new Set(pantryItems.map(p => p.name.trim().toLowerCase()));
     
-    Object.values(plan).forEach((meal: any) => {
-      meal.recipes.forEach((recipe: any) => {
-        recipe.ingredients.forEach((ing: any) => {
+    Object.values(plan).forEach((meal: Meal) => {
+      meal.recipes.forEach((recipe: RecipeInstance) => {
+        recipe.ingredients.forEach((ing: Ingredient) => {
           const name = ing.name.trim().toLowerCase();
           if (!ing.isAvailable && name && !pantryNames.has(name)) {
             if (!missing[name]) missing[name] = [];

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DayOfWeek, Recipe, Ingredient, WeeklyPlan, Meal, PantryItem } from '../types';
+import { DayOfWeek, Recipe, Ingredient, WeeklyPlan, Meal, PantryItem, CleanupRecipeResponse, ImportRecipeResponse, GeneratedIngredient } from '../types';
 import { generateId } from '../utils/id';
 import { useSettings } from './useSettings';
 
@@ -40,7 +40,7 @@ export function useAI(
       return {
         name: data.name,
         yield: data.yield || '',
-        ingredients: data.ingredients.map((ing: any) => ({
+        ingredients: data.ingredients.map((ing) => ({
           id: generateId(),
           name: ing.name,
           amount: ing.amount,
@@ -50,7 +50,7 @@ export function useAI(
         directions: data.directions || [],
         rating: recipe.rating || 0
       };
-    } catch (err: any) {
+    } catch (err) {
       console.error('Recipe cleanup failed:', err);
       const message = err.message || 'Unknown error';
       alert(`Recipe cleanup failed: ${message}. Make sure Ollama is running and the model is pulled.`);
@@ -73,11 +73,11 @@ export function useAI(
 
       // Handle array response (from JSON import) or single recipe
       const recipes = Array.isArray(result) ? result : [result];
-      setSuggestedRecipes(recipes.map((r: any) => ({
+      setSuggestedRecipes(recipes.map((r: ImportRecipeResponse) => ({
         name: r.name || 'Untitled Recipe',
         yield: r.yield || '',
         tags: r.tags || [],
-        ingredients: (r.ingredients || []).map((ing: any) => ({
+        ingredients: (r.ingredients || []).map((ing) => ({
           id: generateId(),
           name: ing.name,
           amount: ing.amount,
@@ -128,7 +128,7 @@ export function useAI(
         if (data.error) throw new Error(data.error);
 
         // More robust extraction of recipes from the AI response
-        let rawRecipes: any[] = [];
+        let rawRecipes: unknown[] = [];
         if (Array.isArray(data)) {
           rawRecipes = data;
         } else if (data && typeof data === 'object') {
@@ -155,29 +155,33 @@ export function useAI(
           }
         }
 
-        const formattedRecipes = rawRecipes.map((r: any) => {
+        const formattedRecipes = rawRecipes.map((r) => {
+          const rec = r as Record<string, unknown>;
           // Try to find the name in common keys
-          const name = r.name || r.recipeName || r.title || 'Untitled Recipe';
+          const name = String(rec.name || rec.recipeName || rec.title || 'Untitled Recipe');
           
           // Try to find ingredients in common keys
-          const rawIngredients = r.ingredients || r.items || r.components || [];
-          const ingredients = (Array.isArray(rawIngredients) ? rawIngredients : []).map((ing: any) => ({
-            id: generateId(),
-            name: typeof ing === 'string' ? ing : (ing.name || ing.item || 'Unknown Ingredient'),
-            amount: typeof ing === 'string' ? '' : (ing.amount || ing.quantity || ''),
-            preparation: typeof ing === 'string' ? undefined : (ing.preparation || undefined),
-            isAvailable: false
-          }));
+          const rawIngredients = rec.ingredients || rec.items || rec.components || [];
+          const ingredients = (Array.isArray(rawIngredients) ? rawIngredients : []).map((ing) => {
+            const ingredient = ing as Record<string, unknown>;
+            return {
+              id: generateId(),
+              name: typeof ing === 'string' ? ing : String(ingredient.name || ingredient.item || 'Unknown Ingredient'),
+              amount: typeof ing === 'string' ? '' : String(ingredient.amount || ingredient.quantity || ''),
+              preparation: typeof ing === 'string' ? undefined : (ingredient.preparation as string | undefined),
+              isAvailable: false
+            };
+          });
 
           // Try to find directions in common keys
-          const rawDirections = r.directions || r.steps || r.instructions || [];
+          const rawDirections = rec.directions || rec.steps || rec.instructions || [];
           const directions = Array.isArray(rawDirections) ? rawDirections : [];
-          const yieldAmount = r.yield || r.servings || r.output || '';
+          const yieldAmount = String(rec.yield || rec.servings || rec.output || '');
 
           return {
             name,
             yield: yieldAmount,
-            tags: r.tags || ['AI'],
+            tags: (rec.tags as string[] | undefined) || ['AI'],
             ingredients,
             directions,
             rating: 0
@@ -191,9 +195,9 @@ export function useAI(
 
         setSuggestedRecipes(formattedRecipes);
         setShowSuggestedRecipeModal(true);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Recipe suggestion failed:', err);
-        const message = err.message || 'Unknown error';
+        const message = err instanceof Error ? err.message : 'Unknown error';
         alert(`Recipe suggestion failed: ${message}. Make sure Ollama is running and the model is pulled.`);
       } finally {
         setIsSuggestingRecipe(false);
@@ -215,9 +219,9 @@ export function useAI(
       });
       const data = await res.json();
       
-      if (data.error) throw new Error(data.error);
+      if ('error' in data) throw new Error(data.error);
 
-      const newIngredients: Ingredient[] = data.map((item: any) => ({
+      const newIngredients: Ingredient[] = (data as GeneratedIngredient[]).map((item) => ({
         id: generateId(),
         name: item.name,
         amount: item.amount,

@@ -236,9 +236,4 @@ describe('useMealPlan', () => {
 
     expect(result.current.plan.Monday.instructions?.[0].completed).toBe(true);
   });
-
-  it('should have empty shopping list initially', () => {
-    const { result } = renderHook(() => useMealPlan());
-    expect(result.current.shoppingList).toEqual([]);
-  });
 });
