@@ -85,20 +85,32 @@ if (fs.existsSync(commonItemsPath)) {
  */
 function getOllamaConfig(overrideUrl?: string) {
   // If an override URL is provided, use it
-  if (overrideUrl) {
-    const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as {value?: string} | undefined;
-    return {
-      url: overrideUrl,
-      model: modelRow?.value || "llama3"
-    };
+  let url = overrideUrl || '';
+  
+  // Handle localhost/127.0.0.1 for Docker environment
+  // When running in Docker, localhost refers to the container itself
+  // So we need to use host.docker.internal to reach the host machine
+  if (!url || url.includes('localhost') || url.includes('127.0.0.1')) {
+    const savedUrl = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as {value?: string} | undefined;
+    url = savedUrl?.value || '';
+    
+    // Transform localhost/127.0.0.1 to host.docker.internal for Docker
+    if (url.includes('localhost') || url.includes('127.0.0.1')) {
+      const urlParts = url.split(':');
+      const port = urlParts.length > 2 ? urlParts[2] : '11434';
+      url = "http://host.docker.internal:" + port;
+    }
+  } else if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    // Transform localhost/127.0.0.1 to host.docker.internal for Docker
+    const urlParts = url.split(':');
+    const port = urlParts.length > 2 ? urlParts[2] : '11434';
+    url = "http://host.docker.internal:" + port;
   }
   
-  // Otherwise, check settings
-  const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as {value?: string} | undefined;
   const modelRow = db.prepare("SELECT value FROM settings WHERE key = 'ollama_model'").get() as {value?: string} | undefined;
   
   return {
-    url: urlRow?.value || "http://localhost:11434",
+    url: url || "http://host.docker.internal:11434",
     model: modelRow?.value || "llama3"
   };
 }
@@ -311,28 +323,37 @@ app.use(cors());
     res.json({ success: true });
   });
 
-   app.get("/api/ai/test-connection", async (req, res) => {
-     const urlParam = req.query.url as string;
-     const savedUrl = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as { value: string } | undefined;
-     
-     let requestUrl = urlParam || savedUrl?.value || '';
-     
-     // Handle localhost/127.0.0.1 for Docker environment
-     // When running in Docker, localhost refers to the container itself
-     // So we need to use host.docker.internal to reach the host machine
-     if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
-       // Extract port from URL (default to 11434 if no port specified)
-       const urlParts = requestUrl.split(':');
-       const port = urlParts.length > 2 ? urlParts[2] : '11434';
-       requestUrl = "http://host.docker.internal:" + port;
-     }
-     
-     if (!requestUrl || !requestUrl.startsWith('http')) {
-       res.status(400).json({ error: "Invalid URL" });
-       return;
-     }
-     
+app.get("/api/ai/test-connection", async (req, res) => {
+      let urlParam = req.query.url as string;
+      
+      // For Docker, use 172.17.0.1 (standard Docker bridge gateway) to reach host
+      const dockerHostIp = '172.17.0.1';
+      
+      // Handle localhost/127.0.0.1 for Docker environment
+      if (urlParam?.includes('localhost') || urlParam?.includes('127.0.0.1')) {
+        const urlParts = urlParam.split(':');
+        const port = urlParts.length > 2 ? urlParts[2] : '11434';
+        urlParam = `http://${dockerHostIp}:${port}`;
+      }
+      
+      const savedUrl = db.prepare("SELECT value FROM settings WHERE key = 'ollama_url'").get() as { value: string } | undefined;
+      
+      let requestUrl = urlParam || savedUrl?.value || '';
+      
+      // Also transform saved URL if it contains localhost/127.0.0.1
+      if (requestUrl.includes('localhost') || requestUrl.includes('127.0.0.1')) {
+        const urlParts = requestUrl.split(':');
+        const port = urlParts.length > 2 ? urlParts[2] : '11434';
+        requestUrl = `http://${dockerHostIp}:${port}`;
+      }
+      
+      if (!requestUrl || !requestUrl.startsWith('http')) {
+        res.status(400).json({ error: "Invalid URL" });
+        return;
+      }
+      
 try {
+        console.log("Testing Ollama at:", requestUrl);
         const response = await axios.get(`${requestUrl}/api/tags`);
         res.json({ success: true, models: response.data.models });
       } catch (err) {
