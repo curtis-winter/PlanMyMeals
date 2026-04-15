@@ -35,7 +35,7 @@ export function WeekControls({
   };
 
   return (
-    <div className="sticky top-20 z-20 bg-background-theme/80 backdrop-blur-sm -mx-4 px-4 pt-2 -mt-2 mb-4 space-y-4 overflow-x-hidden shadow-md">
+    <div className="sticky top-16 z-20 bg-background-theme/80 backdrop-blur-sm -mx-4 px-4 pt-2 -mt-2 mb-4 space-y-2 overflow-x-hidden shadow-md">
       <div className="flex items-center justify-between bg-surface p-4 rounded-2xl shadow-sm border border-border-theme transition-colors">
         <button 
           onClick={() => onNavigateWeek(-1)}

@@ -342,7 +342,7 @@ export default function App() {
           isSuggestingRecipe={isSuggestingRecipe}
         />
 
-        <div className="space-y-4">
+        <div className="space-y-4 pt-20">
           {orderedDays.map((day) => (
             <DayCard
               key={day}
