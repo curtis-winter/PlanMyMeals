@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { usePantry } from './usePantry';
-import { useMealPlan } from './useMealPlan';
 import { generateId } from '../utils/id';
-import { WeeklyPlan, Meal, RecipeInstance, Ingredient } from '../types';
+import { WeeklyPlan, Meal, RecipeInstance, Ingredient, DayOfWeek, PantryItem } from '../types';
 
 export interface CustomItem {
   id: string;
@@ -11,10 +10,7 @@ export interface CustomItem {
   category?: string;
 }
 
-export function useShoppingList() {
-  const { pantryItems } = usePantry();
-  const { plan } = useMealPlan(pantryItems, 'Monday');
-  
+export function useShoppingList(plan: WeeklyPlan, pantryItems: PantryItem[]) {
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
 
   useEffect(() => {

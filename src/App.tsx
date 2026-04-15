@@ -101,7 +101,7 @@ export default function App() {
     saveDayPlan
   } = useMealPlan(pantryItems, weekStartDay as DayOfWeek);
 
-  const { shoppingList: fullShoppingList, customItems, removeCustomItem } = useShoppingList();
+  const { shoppingList: fullShoppingList, customItems, removeCustomItem } = useShoppingList(plan, pantryItems);
 
   // Combine recipe items + custom items for badge count
   const shoppingListCount = fullShoppingList.length + customItems.length;
@@ -114,7 +114,8 @@ export default function App() {
     allTags,
     saveToRecipeBook,
     deleteFromRecipeBook,
-    updateRecipeRating
+    updateRecipeRating,
+    toggleFavorite
   } = useRecipes();
 
   const {
@@ -310,7 +311,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background-theme text-text-theme font-sans pb-20 transition-colors overflow-x-hidden">
+    <div className="min-h-screen bg-background-theme text-text-theme font-sans pb-20 transition-colors overflow-x-hidden flex flex-col">
       <Header 
         isLocalHost={isLocalHost}
         buildNumber={buildNumber}
@@ -329,7 +330,7 @@ export default function App() {
         onNavigateWeek={navigateWeek}
       />
 
-      <main className="max-w-4xl mx-auto px-4 pb-8 overflow-y-auto h-[calc(100vh-64px)]">
+      <main className="max-w-4xl mx-auto px-4 pb-20">
         <WeekControls 
           currentWeekStart={currentWeekStart}
           weekStartDay={weekStartDay as DayOfWeek}
@@ -342,7 +343,7 @@ export default function App() {
           isSuggestingRecipe={isSuggestingRecipe}
         />
 
-        <div className="space-y-4 pt-20">
+        <div className="space-y-4 pt-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           {orderedDays.map((day) => (
             <DayCard
               key={day}
@@ -405,6 +406,7 @@ export default function App() {
         setRecipeSearch={setRecipeSearch}
         filteredRecipes={filteredRecipes}
         updateRecipeRating={updateRecipeRating}
+        toggleFavorite={toggleFavorite}
         applyRecipeToDay={applyRecipeToDay}
         expandedDay={expandedDay}
         pantryItems={pantryItems}
@@ -419,6 +421,7 @@ export default function App() {
         }}
         onCook={handleCookRecipe}
         orderedDays={orderedDays}
+        allTags={allTags}
       />
 
       <RecipeEditorModal

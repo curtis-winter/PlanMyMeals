@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, CheckCircle2, Copy, Check, Sparkles, Loader2, ArrowLeft, Plus, Package } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Copy, Check, Sparkles, Loader2, ArrowLeft, Package } from 'lucide-react';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
-import { getWeekStart } from '../types';
+import { getWeekStart, Ingredient, Meal } from '../types';
 import { Autocomplete } from '../components/ui/Autocomplete';
 
 interface ShoppingItem {
@@ -32,31 +32,42 @@ export default function MobileShoppingList() {
         // Calculate current week start
         const weekStartStr = getWeekStart(new Date(), weekStartDay);
 
-        // Fetch plan
-        const res = await fetch(`/api/plan/${weekStartStr}`);
-        const data = await res.json();
+        // Fetch plan and pantry in parallel
+        const [planRes, pantryRes] = await Promise.all([
+          fetch(`/api/plan/${weekStartStr}`),
+          fetch('/api/pantry')
+        ]);
         
-        // Extract ALL ingredients from recipes (regardless of isAvailable)
-        const allIngredients: [string, string[]][] = [];
+        const data = await planRes.json();
+        const pantryData = await pantryRes.json();
+        const pantryItems = pantryData.map((p: { name: string }) => p.name.toLowerCase().trim());
+        const pantrySet = new Set(pantryItems);
+        
+        // Extract ingredients NOT in pantry
+        const missingIngredients: Record<string, string[]> = {};
+        
         data.forEach((dayPlan: any) => {
           const recipes = JSON.parse(dayPlan.recipes || '[]');
           recipes.forEach((recipe: any) => {
-            recipe.ingredients?.forEach((ing: any) => {
-              const name = ing.name?.trim();
-              if (name) {
-                const existing = allIngredients.find(([n]) => n.toLowerCase() === name.toLowerCase());
-                if (existing) {
-                  if (ing.amount) existing[1].push(ing.amount);
-                } else {
-                  allIngredients.push([ing.name, ing.amount ? [ing.amount] : []]);
+            recipe.ingredients?.forEach((ing: Ingredient) => {
+              const name = ing.name?.trim().toLowerCase();
+              // Only include if not available in pantry
+              if (name && !ing.isAvailable && !pantrySet.has(name)) {
+                if (!missingIngredients[name]) {
+                  missingIngredients[name] = [];
+                }
+                if (ing.amount) {
+                  missingIngredients[name].push(ing.amount);
                 }
               }
             });
           });
         });
-
+        
         // Sort alphabetically
-        setShoppingList(allIngredients.sort(([a], [b]) => a.localeCompare(b)));
+        const sortedList = Object.entries(missingIngredients)
+          .sort(([a], [b]) => a.localeCompare(b));
+        setShoppingList(sortedList);
       } catch (err) {
         console.error('Failed to fetch shopping list:', err);
       }

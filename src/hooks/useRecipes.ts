@@ -121,7 +121,21 @@ export function useRecipes() {
     }
   };
 
-  const filteredRecipes = recipes.filter(r => 
+  const toggleFavorite = async (recipe: Recipe) => {
+    try {
+      const newFavorite = !recipe.isFavorite;
+      await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...recipe, isFavorite: newFavorite })
+      });
+      setRecipes(prev => prev.map(r => r.name === recipe.name ? { ...r, isFavorite: newFavorite } : r));
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    }
+  };
+
+  const filteredRecipes = recipes.filter(r =>  
     r.name.toLowerCase().includes(recipeSearch.toLowerCase()) ||
     (r.tags && r.tags.some(tag => tag.toLowerCase().includes(recipeSearch.toLowerCase())))
   );
@@ -136,6 +150,7 @@ export function useRecipes() {
     allTags,
     saveToRecipeBook,
     deleteFromRecipeBook,
-    updateRecipeRating
+    updateRecipeRating,
+    toggleFavorite
   };
 }

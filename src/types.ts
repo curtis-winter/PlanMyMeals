@@ -45,6 +45,7 @@ export interface Recipe {
   rating: number;
   tags?: string[];
   yield?: string;
+  isFavorite?: boolean;
 }
 
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';

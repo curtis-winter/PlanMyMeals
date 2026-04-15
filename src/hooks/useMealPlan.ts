@@ -209,6 +209,14 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
   };
 
   const applyRecipeToDay = (recipe: Recipe, day: DayOfWeek) => {
+    const existingRecipe = plan[day].recipes.find(r => 
+      r.name.toLowerCase() === recipe.name.toLowerCase() ||
+      (recipe.id && r.recipeId === recipe.id)
+    );
+    if (existingRecipe) {
+      return { success: false, error: 'duplicate' };
+    }
+    
     const newRecipe: RecipeInstance = {
       id: generateId(),
       recipeId: recipe.id,
@@ -225,6 +233,7 @@ export function useMealPlan(pantryItems: PantryItem[] = [], weekStartDay: DayOfW
     };
     setPlan(prev => ({ ...prev, [day]: newMeal }));
     saveMeal(day, newMeal, { strategy: 'immediate' });
+    return { success: true };
   };
 
   const addInstruction = (day: DayOfWeek) => {

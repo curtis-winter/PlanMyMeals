@@ -10,28 +10,21 @@ const mockLocalStorage = {
 };
 Object.defineProperty(global, 'localStorage', { value: mockLocalStorage, writable: true });
 
-vi.mock('../hooks/usePantry', () => ({
-  usePantry: () => ({
-    pantryItems: []
-  })
-}));
-
-vi.mock('../hooks/useMealPlan', () => ({
-  useMealPlan: () => ({
-    plan: {
-      Monday: { recipes: [] },
-      Tuesday: { recipes: [] },
-      Wednesday: { recipes: [] },
-      Thursday: { recipes: [] },
-      Friday: { recipes: [] },
-      Saturday: { recipes: [] },
-      Sunday: { recipes: [] }
-    }
-  })
-}));
-
 import { renderHook, act } from '@testing-library/react';
 import { useShoppingList } from '../hooks/useShoppingList';
+import { WeeklyPlan, PantryItem } from '../types';
+
+const emptyPlan: WeeklyPlan = {
+  Monday: { recipes: [] },
+  Tuesday: { recipes: [] },
+  Wednesday: { recipes: [] },
+  Thursday: { recipes: [] },
+  Friday: { recipes: [] },
+  Saturday: { recipes: [] },
+  Sunday: { recipes: [] }
+};
+
+const emptyPantry: PantryItem[] = [];
 
 describe('useShoppingList', () => {
   beforeEach(() => {
@@ -40,32 +33,32 @@ describe('useShoppingList', () => {
   });
 
   it('should have empty custom items initially', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
     expect(result.current.customItems).toEqual([]);
   });
 
   it('should return addCustomItem function', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
     expect(typeof result.current.addCustomItem).toBe('function');
   });
 
   it('should return removeCustomItem function', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
     expect(typeof result.current.removeCustomItem).toBe('function');
   });
 
   it('should return updateCustomItem function', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
     expect(typeof result.current.updateCustomItem).toBe('function');
   });
 
   it('should return shoppingList', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
     expect(result.current.shoppingList).toEqual([]);
   });
 
   it('should add custom item to list', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
 
     act(() => {
       result.current.addCustomItem('milk', '1 gallon', 'Dairy');
@@ -78,7 +71,7 @@ describe('useShoppingList', () => {
   });
 
   it('should remove custom item from list', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
 
     act(() => {
       result.current.addCustomItem('milk');
@@ -96,7 +89,7 @@ describe('useShoppingList', () => {
   });
 
   it('should update custom item', () => {
-    const { result } = renderHook(() => useShoppingList());
+    const { result } = renderHook(() => useShoppingList(emptyPlan, emptyPantry));
 
     act(() => {
       result.current.addCustomItem('milk');

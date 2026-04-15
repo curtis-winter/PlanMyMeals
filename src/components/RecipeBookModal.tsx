@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Search, Star, Upload, Plus, Play, ChevronDown } from 'lucide-react';
+import { BookOpen, Search, Star, Upload, Plus, Play, ChevronDown, Heart, Filter, X } from 'lucide-react';
 import { Recipe, DayOfWeek, PantryItem } from '../types';
 import { Modal } from './ui/Modal';
 
@@ -10,7 +10,8 @@ interface RecipeBookModalProps {
   setRecipeSearch: (search: string) => void;
   filteredRecipes: Recipe[];
   updateRecipeRating: (recipe: Recipe, rating: number) => void;
-  applyRecipeToDay: (recipe: Recipe, day: DayOfWeek) => void;
+  toggleFavorite: (recipe: Recipe) => void;
+  applyRecipeToDay: (recipe: Recipe, day: DayOfWeek) => { success: boolean; error?: string };
   expandedDay: DayOfWeek | null;
   pantryItems: PantryItem[];
   onOpenImport: () => void;
@@ -18,6 +19,7 @@ interface RecipeBookModalProps {
   onEditRecipe: (recipe: Recipe) => void;
   onCook: (recipe: Recipe) => void;
   orderedDays: DayOfWeek[];
+  allTags: string[];
 }
 
 export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
@@ -27,6 +29,7 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
   setRecipeSearch,
   filteredRecipes,
   updateRecipeRating,
+  toggleFavorite,
   applyRecipeToDay,
   expandedDay,
   pantryItems,
@@ -34,15 +37,38 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
   onOpenNewRecipe,
   onEditRecipe,
   onCook,
-  orderedDays
+  orderedDays,
+  allTags
 }) => {
+  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+  const [ingredientFilter, setIngredientFilter] = React.useState('');
+  const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const filteredByTags = React.useMemo(() => {
+    if (selectedTags.length === 0 && !ingredientFilter && !showFavoritesOnly) return filteredRecipes;
+    return filteredRecipes.filter(recipe => {
+      if (showFavoritesOnly && !recipe.isFavorite) return false;
+      if (selectedTags.length > 0 && !selectedTags.some(tag => recipe.tags?.includes(tag))) return false;
+      if (ingredientFilter && !recipe.ingredients.some(ing => ing.name.toLowerCase().includes(ingredientFilter.toLowerCase()))) return false;
+      return true;
+    });
+  }, [filteredRecipes, selectedTags, ingredientFilter, showFavoritesOnly]);
+
   const pantryNames = React.useMemo(() => 
     new Set(pantryItems.map(item => item.name.toLowerCase().trim())),
     [pantryItems]
   );
 
   const recipesWithAvailability = React.useMemo(() => {
-    return filteredRecipes.map(recipe => {
+    return filteredByTags.map(recipe => {
       const totalIngredients = recipe.ingredients.length;
       if (totalIngredients === 0) return { ...recipe, availability: 100 };
       
@@ -53,7 +79,7 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
       const availability = Math.round((availableCount / totalIngredients) * 100);
       return { ...recipe, availability };
     }).sort((a, b) => b.availability - a.availability);
-  }, [filteredRecipes, pantryNames]);
+  }, [filteredByTags, pantryNames]);
 
   return (
     <Modal
@@ -75,6 +101,58 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
               className="w-full pl-12 pr-4 py-3 rounded-2xl bg-background-theme border-transparent focus:bg-surface focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-primary"
             />
           </div>
+          
+          {/* Ingredient filter */}
+          <div className="relative">
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-theme w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Filter by ingredient..."
+              value={ingredientFilter}
+              onChange={(e) => setIngredientFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-background-theme border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm text-primary"
+            />
+          </div>
+          
+          {/* Tag filters */}
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {allTags.slice(0, 10).map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={`px-2 py-1 rounded-md text-xs font-bold transition-all ${
+                    selectedTags.includes(tag)
+                      ? 'bg-primary text-background-theme'
+                      : 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+              {selectedTags.length > 0 && (
+                <button
+                  onClick={() => setSelectedTags([])}
+                  className="px-2 py-1 rounded-md text-xs font-bold text-neutral-theme hover:text-primary"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+          
+          {/* Favorites toggle */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showFavoritesOnly}
+              onChange={(e) => setShowFavoritesOnly(e.target.checked)}
+              className="w-4 h-4 rounded text-primary"
+            />
+            <Heart className={`w-4 h-4 ${showFavoritesOnly ? 'fill-red-500 text-red-500' : 'text-neutral-theme'}`} />
+            <span className="text-sm text-neutral-theme">Show favorites only</span>
+          </label>
+          
           <div className="flex gap-3">
             <button
               onClick={onOpenNewRecipe}
@@ -108,16 +186,28 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-bold text-primary pr-8 group-hover:text-secondary transition-colors">{recipe.name}</h4>
-                    <div className="flex gap-0.5" onClick={(e) => e.stopPropagation()}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          onClick={() => updateRecipeRating(recipe, star)}
-                          className={`transition-colors ${star <= recipe.rating ? 'text-accent-theme' : 'text-neutral-theme/20 hover:text-accent-theme/50'}`}
-                        >
-                          <Star className="w-4 h-4 fill-current" />
-                        </button>
-                      ))}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(recipe);
+                        }}
+                        className="p-1 hover:scale-110 transition-transform"
+                        title={recipe.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        <Heart className={`w-4 h-4 ${recipe.isFavorite ? 'fill-red-500 text-red-500' : 'text-neutral-theme/30 hover:text-red-500'}`} />
+                      </button>
+                      <div className="flex gap-0.5" onClick={(e) => e.stopPropagation()}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => updateRecipeRating(recipe, star)}
+                            className={`transition-colors ${star <= recipe.rating ? 'text-accent-theme' : 'text-neutral-theme/20 hover:text-accent-theme/50'}`}
+                          >
+                            <Star className="w-4 h-4 fill-current" />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   {recipe.tags && recipe.tags.length > 0 && (
@@ -150,8 +240,12 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            applyRecipeToDay(recipe, expandedDay);
-                            onClose();
+                            const result = applyRecipeToDay(recipe, expandedDay);
+                            if (result.success) {
+                              onClose();
+                            } else if (result.error === 'duplicate') {
+                              alert(`${recipe.name} is already on ${expandedDay}`);
+                            }
                           }}
                           className="px-3 py-2 bg-primary text-background-theme rounded-xl text-[10px] font-bold hover:bg-secondary hover:text-primary transition-all shadow-sm"
                         >
@@ -172,8 +266,12 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
                                 key={day}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  applyRecipeToDay(recipe, day);
-                                  onClose();
+                                  const result = applyRecipeToDay(recipe, day);
+                                  if (result.success) {
+                                    onClose();
+                                  } else if (result.error === 'duplicate') {
+                                    alert(`${recipe.name} is already on ${day}`);
+                                  }
                                 }}
                                 className="w-full px-3 py-2 text-left text-[10px] font-bold text-text-theme hover:bg-background-theme hover:text-primary transition-colors"
                               >

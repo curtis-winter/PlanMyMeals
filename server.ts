@@ -28,6 +28,7 @@ interface RecipeRow {
   directions: string;
   rating: number;
   tags: string;
+  is_favorite?: number;
 }
 
 interface PantryRow {
@@ -127,7 +128,7 @@ function getOllamaTimeout(key: string, defaultValue: number): number {
 }
 
 // Initialize DB with versioning
-const CURRENT_DB_VERSION = 3;
+const CURRENT_DB_VERSION = 4;
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS db_version (
@@ -188,6 +189,34 @@ const migrations = [
       db.exec(`
         UPDATE meal_plans SET recipes = '[]' WHERE recipes IS NULL OR recipes = '';
       `);
+    }
+  },
+  {
+    version: 2,
+    up: () => {
+      db.prepare("INSERT OR IGNORE INTO shopping_history (name, category) SELECT name, category FROM pantry").run();
+    }
+  },
+  {
+    version: 3,
+    up: () => {
+      // Ensure instructions column exists (for DBs created before v3)
+      try {
+        db.exec("ALTER TABLE meal_plans ADD COLUMN instructions TEXT;");
+      } catch {
+        // Column may already exist
+      }
+    }
+  },
+  {
+    version: 4,
+    up: () => {
+      // Add is_favorite column to recipes
+      try {
+        db.exec("ALTER TABLE recipes ADD COLUMN is_favorite INTEGER DEFAULT 0;");
+      } catch {
+        // Column may already exist
+      }
     }
   },
   {
@@ -393,14 +422,15 @@ try {
       ...r, 
       ingredients: JSON.parse(r.ingredients || "[]"),
       directions: JSON.parse(r.directions || "[]"),
-      tags: JSON.parse(r.tags || "[]")
+      tags: JSON.parse(r.tags || "[]"),
+      isFavorite: r.is_favorite === 1
     })));
   });
 
   app.post("/api/recipes", (req, res) => {
     try {
       console.log("POST /api/recipes body:", req.body);
-      const { id, name, ingredients, directions, rating, tags } = req.body;
+      const { id, name, ingredients, directions, rating, tags, isFavorite } = req.body;
       
       if (!name) {
         res.status(400).json({ error: "Recipe name is required" });
@@ -417,9 +447,9 @@ try {
         const existing = db.prepare("SELECT id FROM recipes WHERE id = ?").get(id) as any;
         if (existing) {
           db.prepare(`
-            UPDATE recipes SET name = ?, ingredients = ?, directions = ?, rating = ?, tags = ?
+            UPDATE recipes SET name = ?, ingredients = ?, directions = ?, rating = ?, tags = ?, is_favorite = ?
             WHERE id = ?
-          `).run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags), id);
+          `).run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags), isFavorite ? 1 : 0, id);
           res.json({ success: true });
           return;
         }
@@ -437,10 +467,10 @@ try {
       }
       
       const stmt = db.prepare(`
-        INSERT INTO recipes (name, ingredients, directions, rating, tags)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO recipes (name, ingredients, directions, rating, tags, is_favorite)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
-      const result = stmt.run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags));
+      const result = stmt.run(name, JSON.stringify(safeIngredients), JSON.stringify(safeDirections), rating || 0, JSON.stringify(safeTags), isFavorite ? 1 : 0);
       // Get the new recipe ID
       const newId = result.lastInsertRowid;
       res.json({ success: true, id: newId });
