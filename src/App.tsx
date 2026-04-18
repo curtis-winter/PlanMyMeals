@@ -342,7 +342,7 @@ const { toasts, showToast, removeToast } = useToast();
         onNavigateWeek={navigateWeek}
       />
 
-      <main className="max-w-4xl mx-auto px-2 md:px-4 pb-20 flex flex-col flex-1">
+      <main className="max-w-4xl w-full mx-auto px-2 md:px-4 pb-20 flex flex-col flex-1">
         <WeekControls 
           currentWeekStart={currentWeekStart}
           weekStartDay={weekStartDay as DayOfWeek}

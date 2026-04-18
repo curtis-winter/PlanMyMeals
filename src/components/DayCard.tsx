@@ -186,12 +186,11 @@ export const DayCard: React.FC<DayCardProps> = ({
 
 return (
   <motion.div
-    layout
     data-day-card={dataDayCard}
     style={{ zIndex: 1, position: 'relative' }}
       className={`bg-surface rounded-2xl transition-all duration-200 ${
         isToday ? 'border-2 border-primary shadow-lg' : 
-        isExpanded ? 'border border-primary shadow-md' : 'border-border-theme shadow-sm hover:border-primary/50'
+        isExpanded ? 'border-2 border-primary shadow-md' : 'border-2 border-border-theme shadow-sm hover:border-primary/50'
       }`}
       onDragEnter={(e) => {
         e.preventDefault();

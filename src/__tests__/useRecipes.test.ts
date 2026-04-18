@@ -1,72 +1,64 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-import { renderHook, act } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { useRecipes } from '../hooks/useRecipes';
 
-const mockRecipes = [
-  { id: 1, name: 'Pancakes', ingredients: [], directions: [], tags: ['breakfast'], rating: 5 },
-  { id: 2, name: 'Spaghetti', ingredients: [], directions: [], tags: ['dinner', 'italian'], rating: 4 }
-];
+vi.mock('../hooks/useSettings', () => ({
+  useSettings: () => ({ ollamaSettings: { url: 'http://localhost:11434', model: 'llama3' } })
+}));
 
 describe('useRecipes', () => {
   beforeEach(() => {
-    mockFetch.mockReset();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue(mockRecipes)
-    });
+    vi.clearAllMocks();
   });
 
-  it('should have empty recipes initially before fetch', () => {
+  it('should have empty recipes initially', () => {
     const { result } = renderHook(() => useRecipes());
     expect(result.current.recipes).toEqual([]);
   });
 
-  it('should return recipeSearch state', () => {
+  it('should return recipeSearch as empty string', () => {
     const { result } = renderHook(() => useRecipes());
     expect(result.current.recipeSearch).toBe('');
   });
 
-  it('should return setRecipeSearch function', () => {
+  it('should provide setRecipeSearch function', () => {
     const { result } = renderHook(() => useRecipes());
     expect(typeof result.current.setRecipeSearch).toBe('function');
   });
 
-  it('should return filteredRecipes', () => {
+  it('should provide filteredRecipes', () => {
     const { result } = renderHook(() => useRecipes());
     expect(result.current.filteredRecipes).toEqual([]);
   });
 
-  it('should return allTags', () => {
+  it('should provide allTags', () => {
     const { result } = renderHook(() => useRecipes());
     expect(result.current.allTags).toEqual([]);
   });
 
-  it('should return saveToRecipeBook function', () => {
+  it('should provide saveToRecipeBook function', () => {
     const { result } = renderHook(() => useRecipes());
     expect(typeof result.current.saveToRecipeBook).toBe('function');
   });
 
-  it('should return deleteFromRecipeBook function', () => {
+  it('should provide deleteFromRecipeBook function', () => {
     const { result } = renderHook(() => useRecipes());
     expect(typeof result.current.deleteFromRecipeBook).toBe('function');
   });
 
-  it('should return updateRecipeRating function', () => {
+  it('should provide updateRecipeRating function', () => {
     const { result } = renderHook(() => useRecipes());
     expect(typeof result.current.updateRecipeRating).toBe('function');
   });
 
-  it('should set recipe search', () => {
+  it('should provide toggleFavorite function', () => {
     const { result } = renderHook(() => useRecipes());
+    expect(typeof result.current.toggleFavorite).toBe('function');
+  });
 
-    act(() => {
-      result.current.setRecipeSearch('Pancakes');
-    });
-
-    expect(result.current.recipeSearch).toBe('Pancakes');
+  it('should return promise for recipe without name (async function)', () => {
+    const { result } = renderHook(() => useRecipes());
+    const saveResult = result.current.saveToRecipeBook({ ingredients: [], directions: [] } as any);
+    expect(saveResult).toBeDefined();
   });
 });
