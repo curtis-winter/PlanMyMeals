@@ -63,7 +63,7 @@ export function useSettings() {
 
   const saveSettings = async () => {
     try {
-      await fetch('/api/settings', {
+      const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,7 +81,7 @@ export function useSettings() {
           week_start_day: weekStartDay
         })
       });
-      return true;
+      return res.ok;
     } catch (err) {
       console.error('Failed to save settings:', err);
       return false;

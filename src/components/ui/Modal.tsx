@@ -69,13 +69,13 @@ export const Modal: React.FC<ModalProps> = ({
             animate={getAnimate()}
             exit={getExit()}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className={`relative bg-surface shadow-2xl overflow-hidden flex flex-col border border-border-theme ${
+            className={`relative bg-surface shadow-2xl overflow-hidden flex flex-col ${
               fullScreen ? 'w-full h-full' : 
-              side !== 'center' ? 'h-full w-full max-w-md' :
-              `w-full ${maxWidth} rounded-3xl max-h-[90vh]`
+              side !== 'center' ? 'h-full w-full max-w-md rounded-3xl' :
+              `w-full ${maxWidth} rounded-3xl max-h-[90vh] border border-border-theme`
             }`}
           >
-            <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${fullScreen || side !== 'center' ? 'sticky top-0 z-20' : ''} ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-background-theme border-border-theme'}`}>
+            <div className={`px-6 py-4 flex items-center justify-between shrink-0 ${fullScreen || side !== 'center' ? 'sticky top-0 z-20' : ''} ${isLocalHost ? 'bg-red-600' : 'bg-background-theme'} ${side !== 'center' ? 'rounded-t-3xl' : ''}`}>
               <div className="flex items-center gap-3">
                 {icon && (
                   <div className={`p-2 rounded-xl ${isLocalHost ? 'bg-white' : 'bg-primary'}`}>
@@ -100,7 +100,7 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
 
             {footer && (
-              <div className={`p-6 bg-background-theme border-t border-border-theme shrink-0 ${fullScreen || side !== 'center' ? 'sticky bottom-0 z-20' : ''}`}>
+              <div className={`p-6 bg-background-theme shrink-0 ${fullScreen || side !== 'center' ? 'sticky bottom-0 z-20' : ''} ${side !== 'center' ? 'rounded-b-3xl' : ''}`}>
                 {footer}
               </div>
             )}

@@ -25,6 +25,8 @@ describe('DayCard', () => {
     addRecipeToDay: vi.fn(),
     updateRecipe: vi.fn(),
     removeRecipe: vi.fn(),
+    saveToRecipeBook: vi.fn(),
+    bookRecipes: [],
     addIngredient: vi.fn(),
     updateIngredient: vi.fn(),
     removeIngredient: vi.fn(),
@@ -43,6 +45,7 @@ describe('DayCard', () => {
     onDragStart: vi.fn(),
     onDragOver: vi.fn(),
     onDrop: vi.fn(),
+    onImportRecipe: vi.fn(),
   };
 
   beforeEach(() => {
@@ -112,5 +115,26 @@ describe('DayCard', () => {
   it('should handle multiple recipes', () => {
     render(<DayCard {...defaultProps} recipes={[createMockRecipe(), createMockRecipe({ id: 'id-2', name: 'Recipe 2' })]} />);
     expect(screen.getAllByText(/recipe/i).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should apply today styling when isToday is true', () => {
+    render(<DayCard {...defaultProps} isToday={true} isExpanded={true} />);
+    const card = screen.getByText(/monday/i).closest('.rounded-2xl');
+    expect(card).toHaveClass('border-primary');
+  });
+
+  it('should handle empty pantry items', () => {
+    render(<DayCard {...defaultProps} pantryItems={[]} />);
+    expect(screen.getByText(/test recipe/i)).toBeInTheDocument();
+  });
+
+  it('should render without crashing with all props', () => {
+    const propsWithAll = {
+      ...defaultProps,
+      date: new Date('2024-01-15'),
+      instructions: [{ id: 'task-1', text: 'Buy milk', completed: false }],
+    };
+    const { container } = render(<DayCard {...propsWithAll} />);
+    expect(container).toBeInTheDocument();
   });
 });

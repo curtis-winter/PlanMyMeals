@@ -143,6 +143,21 @@ The database contains tables for:
 
 - `npm run dev` - Start development server
 - `npm run lint` - Type checking only
+- `npm run test` - Run tests
+- `npm run test:coverage` - Run tests with coverage report
+
+## Test Coverage
+
+The project uses Vitest for testing with React Testing Library. Coverage targets:
+
+| Code Type | Target |
+|-----------|--------|
+| Business logic (hooks, utils) | 85-95% |
+| UI components | 60-80% |
+| API/server code | 90-100% |
+| **Overall** | **60-75%** |
+
+Run `npm run test:coverage` to check current coverage.
 
 ## License
 

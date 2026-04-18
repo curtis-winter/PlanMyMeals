@@ -500,6 +500,7 @@ const { toasts, showToast, removeToast } = useToast();
         weekStartDay={weekStartDay}
         setWeekStartDay={setWeekStartDay}
         isLocalHost={isLocal}
+        buildNumber={buildNumber}
       />
 
       <ImportRecipeModal

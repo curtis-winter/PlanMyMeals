@@ -55,6 +55,18 @@
 - **Location**: Tests in `src/__tests__/` directory
 - **Patterns**: Component tests with React Testing Library, hook tests with @testing-library/react-hooks
 
+## Test Coverage Targets
+| Code Type | Target | Notes |
+|----------|--------|-------|
+| Business logic (hooks, utils) | 85-95% | Critical logic, high value |
+| UI components | 60-80% | Render + interactions |
+| API/server code | 90-100% | Critical paths |
+| Event handlers | 70-85% | User actions |
+| **Overall** | **60-75%** | Good production app |
+
+- Run `npm run test:coverage` to check current coverage
+- Aim for 60%+ overall as primary target
+
 ## API Endpoints
 - `/api/meals` - Meal plan CRUD operations
 - `/api/recipes` - Recipe CRUD operations  
