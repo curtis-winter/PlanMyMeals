@@ -8,6 +8,7 @@ export function useModalState() {
   const [showSettings, setShowSettings] = useState(false);
   const [showRecipeEditor, setShowRecipeEditor] = useState(false);
   const [showCookModal, setShowCookModal] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Partial<Recipe> | null>(null);
   const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
 
@@ -18,6 +19,7 @@ export function useModalState() {
     showSettings,
     showRecipeEditor,
     showCookModal,
+    showHistory,
     editingRecipe,
     cookingRecipe,
     setShowShoppingList,
@@ -26,6 +28,7 @@ export function useModalState() {
     setShowSettings,
     setShowRecipeEditor,
     setShowCookModal,
+    setShowHistory,
     setEditingRecipe,
     setCookingRecipe
   };

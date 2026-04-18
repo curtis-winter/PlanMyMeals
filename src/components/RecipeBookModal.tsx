@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Search, Star, Upload, Plus, Play, ChevronDown, Heart, Filter, X } from 'lucide-react';
+import { BookOpen, Search, Star, Upload, Plus, Play, ChevronDown, Heart, Filter, X, History } from 'lucide-react';
 import { Recipe, DayOfWeek, PantryItem } from '../types';
 import { Modal } from './ui/Modal';
 
@@ -18,6 +18,7 @@ interface RecipeBookModalProps {
   onOpenNewRecipe: () => void;
   onEditRecipe: (recipe: Recipe) => void;
   onCook: (recipe: Recipe) => void;
+  onOpenHistory: () => void;
   orderedDays: DayOfWeek[];
   allTags: string[];
   isLocalHost?: boolean;
@@ -38,6 +39,7 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
   onOpenNewRecipe,
   onEditRecipe,
   onCook,
+  onOpenHistory,
   orderedDays,
   allTags,
   isLocalHost
@@ -157,6 +159,13 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
           </label>
           
           <div className="flex gap-3">
+            <button
+              onClick={onOpenHistory}
+              className="py-3 px-4 bg-primary text-background-theme rounded-2xl font-bold hover:bg-secondary hover:text-primary transition-all shadow-md flex items-center justify-center gap-2"
+              title="View Meal History"
+            >
+              <History className="w-4 h-4" />
+            </button>
             <button
               onClick={onOpenNewRecipe}
               className="flex-1 py-3 bg-primary text-background-theme rounded-2xl font-bold hover:bg-secondary hover:text-primary transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"

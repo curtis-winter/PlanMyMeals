@@ -177,6 +177,18 @@ CREATE TABLE IF NOT EXISTS ollama_servers (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS meal_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  day TEXT NOT NULL,
+  recipe_name TEXT NOT NULL,
+  recipe_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_meal_history_date ON meal_history(date);
+CREATE INDEX IF NOT EXISTS idx_meal_history_recipe_name ON meal_history(recipe_name);
+
 CREATE INDEX IF NOT EXISTS idx_pantry_name ON pantry(name);
 CREATE INDEX IF NOT EXISTS idx_pantry_category ON pantry(category);
 CREATE INDEX IF NOT EXISTS idx_shopping_history_name ON shopping_history(name);
@@ -402,6 +414,72 @@ try {
     `);
     stmt.run(week_start, day, JSON.stringify(recipes), JSON.stringify(instructions || []));
     res.json({ success: true });
+  });
+
+  // Meal History API
+  app.get("/api/meal-history", (req, res) => {
+    try {
+      const { search, startDate, endDate, limit } = req.query;
+      let query = "SELECT * FROM meal_history";
+      const conditions: string[] = [];
+      const params: (string | number)[] = [];
+
+      if (startDate) {
+        conditions.push("date >= ?");
+        params.push(startDate as string);
+      }
+      if (endDate) {
+        conditions.push("date <= ?");
+        params.push(endDate as string);
+      }
+      if (search) {
+        conditions.push("recipe_name LIKE ?");
+        params.push(`%${search}%`);
+      }
+
+      if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+      }
+      query += " ORDER BY date DESC";
+      
+      if (limit) {
+        query += " LIMIT ?";
+        params.push(parseInt(limit as string));
+      }
+
+      const rows = db.prepare(query).all(...params);
+      res.json(rows);
+    } catch (err) {
+      console.error("Failed to fetch meal history:", err);
+      res.status(500).json({ error: "Failed to fetch meal history" });
+    }
+  });
+
+  app.post("/api/meal-history", (req, res) => {
+    try {
+      const { date, day, recipeName, recipeId } = req.body;
+      if (!date || !day || !recipeName) {
+        res.status(400).json({ error: "Date, day, and recipe name are required" });
+        return;
+      }
+
+      const stmt = db.prepare("INSERT INTO meal_history (date, day, recipe_name, recipe_id) VALUES (?, ?, ?, ?)");
+      const result = stmt.run(date, day, recipeName, recipeId || null);
+      res.json({ success: true, id: result.lastInsertRowid });
+    } catch (err) {
+      console.error("Failed to add to meal history:", err);
+      res.status(500).json({ error: "Failed to add to meal history" });
+    }
+  });
+
+  app.delete("/api/meal-history/:id", (req, res) => {
+    try {
+      db.prepare("DELETE FROM meal_history WHERE id = ?").run(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Failed to delete from meal history:", err);
+      res.status(500).json({ error: "Failed to delete from meal history" });
+    }
   });
 
   // Recipes API

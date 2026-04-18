@@ -20,6 +20,7 @@ import { useBuildInfo } from './hooks/useBuildInfo';
 import { useModalState } from './hooks/useModalState';
 import { useShoppingList } from './hooks/useShoppingList';
 import { useToast } from './hooks/useToast';
+import { useMealHistory } from './hooks/useMealHistory';
 
 // Components
 import { ShoppingListModal } from './components/ShoppingListModal';
@@ -31,6 +32,7 @@ import { ImportRecipeModal } from './components/ImportRecipeModal';
 import { SuggestedRecipeModal } from './components/SuggestedRecipeModal';
 import { RecipeEditorModal } from './components/RecipeEditorModal';
 import { CookRecipeModal } from './components/CookRecipeModal';
+import { HistoryModal } from './components/HistoryModal';
 import { DayCard } from './components/DayCard';
 import { Header } from './components/Header';
 import { WeekControls } from './components/WeekControls';
@@ -106,6 +108,7 @@ export default function App() {
 
 const { shoppingList: fullShoppingList, customItems, removeCustomItem } = useShoppingList(plan, pantryItems);
 const { toasts, showToast, removeToast } = useToast();
+const { addToHistory } = useMealHistory();
 
 // Combine recipe items + custom items for badge count
   const shoppingListCount = fullShoppingList.length + customItems.length;
@@ -165,6 +168,8 @@ const { toasts, showToast, removeToast } = useToast();
     setEditingRecipe,
     showCookModal,
     setShowCookModal,
+    showHistory,
+    setShowHistory,
     cookingRecipe,
     setCookingRecipe
   } = useModalState();
@@ -256,11 +261,14 @@ const { toasts, showToast, removeToast } = useToast();
   }, [saveToRecipeBook, savePantryItem]);
 
   const handleCookRecipe = useCallback((recipe: Recipe) => {
+    const today = new Date().toISOString().split('T')[0];
+    const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    addToHistory(today, dayName, recipe.name, recipe.id);
     setCookingRecipe(recipe);
     setShowRecipeEditor(false);
     setShowRecipeBook(false);
     setShowCookModal(true);
-  }, [setCookingRecipe, setShowRecipeEditor, setShowRecipeBook, setShowCookModal]);
+  }, [setCookingRecipe, setShowRecipeEditor, setShowRecipeBook, setShowCookModal, addToHistory]);
 
   const handleUseIngredient = useCallback((name: string) => {
     const item = findPantryItem(name);
@@ -432,6 +440,7 @@ const { toasts, showToast, removeToast } = useToast();
           setShowRecipeEditor(true);
         }}
         onCook={handleCookRecipe}
+        onOpenHistory={() => setShowHistory(true)}
         orderedDays={orderedDays}
         allTags={allTags}
         isLocalHost={isLocal}
@@ -558,6 +567,12 @@ const { toasts, showToast, removeToast } = useToast();
           onUseIngredient={handleUseIngredient}
         />
       )}
+
+      <HistoryModal
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        isLocalHost={isLocal}
+      />
 
       {/* Floating Action Buttons - only visible on mobile */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-4 md:hidden z-50">

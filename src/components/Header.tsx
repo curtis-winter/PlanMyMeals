@@ -23,12 +23,14 @@ interface HeaderProps {
   showRecipeBook: boolean;
   showPantryManager: boolean;
   showShoppingList: boolean;
+  showHistory?: boolean;
   shoppingList: Array<{ name: string; amount: string }>;
   shoppingListCount: number;
   onToggleSettings: () => void;
   onToggleRecipeBook: () => void;
   onTogglePantryManager: () => void;
   onToggleShoppingList: () => void;
+  onToggleHistory?: () => void;
   onNavigateWeek: (direction: number) => void;
 }
 
