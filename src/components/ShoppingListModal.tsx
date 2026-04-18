@@ -9,6 +9,7 @@ interface ShoppingListModalProps {
   onClose: () => void;
   shoppingList: [string, string[]][];
   customItems: { id: string; name: string }[];
+  isLocalHost?: boolean;
   onMarkAsAvailable: (name: string) => void;
   onAddItem?: (name: string) => void;
   onUpdateCustomItem?: (id: string, updates: Partial<{ name: string }>) => void;
@@ -33,6 +34,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   onClose, 
   shoppingList, 
   customItems: propCustomItems,
+  isLocalHost,
   onMarkAsAvailable, 
   onAddItem,
   onUpdateCustomItem,
@@ -256,15 +258,16 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
       onClose={onClose}
       title="Shopping List"
       maxWidth="max-w-md"
+      isLocalHost={isLocalHost}
       icon={<ShoppingCart className="text-background-theme w-5 h-5" />}
       headerActions={
         <div className="flex items-center gap-1">
           <a
-            href="/mobile"
+            href="/shoppinglist"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-            title="Open Mobile Version"
+            className={`p-2 rounded-lg transition-colors ${isLocalHost ? 'text-white hover:bg-white/10' : 'text-primary hover:bg-primary/10'}`}
+            title="Open Full Page"
           >
             <Smartphone className="w-4 h-4" />
           </a>

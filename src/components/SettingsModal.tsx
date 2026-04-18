@@ -39,6 +39,7 @@ interface SettingsModalProps {
   setTimeoutPantry: (timeout: number) => void;
   weekStartDay: string;
   setWeekStartDay: (day: string) => void;
+  isLocalHost?: boolean;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -76,7 +77,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   timeoutPantry,
   setTimeoutPantry,
   weekStartDay,
-  setWeekStartDay
+  setWeekStartDay,
+  isLocalHost
 }) => {
   const handleSave = async () => {
     const success = await saveSettings();
@@ -89,6 +91,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       onClose={onClose}
       title="Configuration"
       side="left"
+      isLocalHost={isLocalHost}
       icon={<Settings className="text-background-theme w-5 h-5" />}
       footer={
         <button

@@ -3,6 +3,7 @@ import { ShoppingCart, CheckCircle2, Copy, Check, Sparkles, Loader2, ArrowLeft, 
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
 import { getWeekStart, Ingredient, Meal } from '../types';
 import { Autocomplete } from '../components/ui/Autocomplete';
+import { isLocalHost } from '../utils/environment';
 
 interface ShoppingItem {
   name: string;
@@ -227,32 +228,32 @@ export default function MobileShoppingList() {
 
   return (
     <div className="min-h-screen bg-background-theme pb-24">
-      {/* Header */}
-        <header className="bg-surface border-b border-border-theme sticky top-0 z-20">
+{/* Header */}
+        <header className={`border-b sticky top-0 z-20 ${isLocalHost() ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
           <div className="flex items-center justify-between p-4 w-full">
             <div className="flex items-center gap-2">
-              <button onClick={() => window.location.href = '/'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Main">
-                <ArrowLeft className="w-5 h-5 text-primary" />
+<button onClick={() => window.location.href = '/'} className={`p-2 rounded-lg ${isLocalHost() ? 'hover:bg-white/10' : 'hover:bg-primary/10'}`} title="Go to Main">
+                <ArrowLeft className={`w-5 h-5 ${isLocalHost() ? 'text-white' : 'text-primary'}`} />
               </button>
-              <div className="bg-primary p-2 rounded-xl">
-                <ShoppingCart className="text-background-theme w-5 h-5" />
+              <div className={`p-2 rounded-xl ${isLocalHost() ? 'bg-white' : 'bg-primary'}`}>
+                <ShoppingCart className={`w-5 h-5 ${isLocalHost() ? 'text-red-600' : 'text-background-theme'}`} />
               </div>
-              <h1 className="text-xl font-bold text-primary">Shopping List</h1>
+              <h1 className={`text-xl font-bold ${isLocalHost() ? 'text-white' : 'text-primary'}`}>Shopping List</h1>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => window.location.href = '/pantry'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Pantry">
-                <Package className="w-5 h-5 text-primary" />
+              <button onClick={() => window.location.href = '/pantry'} className={`p-2 rounded-lg ${isLocalHost() ? 'hover:bg-white/10' : 'hover:bg-primary/10'}`} title="Go to Pantry">
+                <ShoppingCart className={`w-5 h-5 ${isLocalHost() ? 'text-white' : 'text-primary'}`} />
               </button>
               <button
                 onClick={handleOptimizeCategories}
                 disabled={isOptimizing || allItems.length === 0}
-                className="p-2 text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
+                className={`p-2 rounded-lg disabled:opacity-50 ${isLocalHost() ? 'text-white hover:bg-white/10' : 'text-primary hover:bg-primary/10'}`}
               >
                 {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
               </button>
             </div>
           </div>
-      </header>
+        </header>
 
       {/* Content */}
       <main className="p-4">

@@ -13,6 +13,7 @@ interface ModalProps {
   headerActions?: React.ReactNode;
   fullScreen?: boolean;
   side?: 'center' | 'left' | 'right';
+  isLocalHost?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -25,7 +26,8 @@ export const Modal: React.FC<ModalProps> = ({
   icon,
   headerActions,
   fullScreen = false,
-  side = 'center'
+  side = 'center',
+  isLocalHost = false
 }) => {
   const getInitial = () => {
     if (fullScreen) return { opacity: 0, y: '100%' };
@@ -73,22 +75,22 @@ export const Modal: React.FC<ModalProps> = ({
               `w-full ${maxWidth} rounded-3xl max-h-[90vh]`
             }`}
           >
-            <div className={`px-6 py-4 border-b border-border-theme flex items-center justify-between bg-background-theme shrink-0 ${fullScreen || side !== 'center' ? 'sticky top-0 z-20' : ''}`}>
+            <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${fullScreen || side !== 'center' ? 'sticky top-0 z-20' : ''} ${isLocalHost ? 'bg-red-600 border-red-800' : 'bg-background-theme border-border-theme'}`}>
               <div className="flex items-center gap-3">
                 {icon && (
-                  <div className="bg-primary p-2 rounded-xl">
+                  <div className={`p-2 rounded-xl ${isLocalHost ? 'bg-white' : 'bg-primary'}`}>
                     {icon}
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-primary">{title}</h3>
+                <h3 className={`text-xl font-bold ${isLocalHost ? 'text-white' : 'text-primary'}`}>{title}</h3>
               </div>
               <div className="flex items-center gap-2">
                 {headerActions}
                 <button 
                   onClick={onClose}
-                  className="p-2 hover:bg-surface rounded-full transition-colors"
+                  className={`p-2 rounded-full transition-colors ${isLocalHost ? 'hover:bg-white/10' : 'hover:bg-surface'}`}
                 >
-                  <Icons.X className="w-5 h-5 text-neutral-theme" />
+                  <Icons.X className={`w-5 h-5 ${isLocalHost ? 'text-white' : 'text-neutral-theme'}`} />
                 </button>
               </div>
             </div>

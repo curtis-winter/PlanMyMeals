@@ -20,6 +20,7 @@ interface RecipeBookModalProps {
   onCook: (recipe: Recipe) => void;
   orderedDays: DayOfWeek[];
   allTags: string[];
+  isLocalHost?: boolean;
 }
 
 export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
@@ -38,7 +39,8 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
   onEditRecipe,
   onCook,
   orderedDays,
-  allTags
+  allTags,
+  isLocalHost
 }) => {
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
   const [ingredientFilter, setIngredientFilter] = React.useState('');
@@ -87,6 +89,7 @@ export const RecipeBookModal: React.FC<RecipeBookModalProps> = ({
       onClose={onClose}
       title="Recipe Book"
       maxWidth="max-w-2xl"
+      isLocalHost={isLocalHost}
       icon={<BookOpen className="text-background-theme w-5 h-5" />}
     >
       <div className="flex flex-col h-full">

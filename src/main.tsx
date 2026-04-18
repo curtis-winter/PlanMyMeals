@@ -14,6 +14,14 @@ if (darkMode) {
 const path = window.location.pathname;
 
 if (path === '/mobile' || path === '/mobile/') {
+  window.location.href = '/shoppinglist';
+} else if (path === '/shoppinglist' || path === '/shoppinglist/') {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <MobileShoppingList />
+    </StrictMode>,
+  );
+} else if (path === '/pantry' || path === '/pantry/') {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <MobileShoppingList />

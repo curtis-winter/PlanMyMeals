@@ -115,7 +115,7 @@ export function useRecipes() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...recipe, rating })
       });
-      setRecipes(prev => prev.map(r => r.name === recipe.name ? { ...r, rating } : r));
+      setRecipes(prev => prev.map(r => r.name.toLowerCase() === recipe.name.toLowerCase() ? { ...r, rating } : r));
     } catch (err) {
       console.error('Failed to update rating:', err);
     }
@@ -129,7 +129,7 @@ export function useRecipes() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...recipe, isFavorite: newFavorite })
       });
-      setRecipes(prev => prev.map(r => r.name === recipe.name ? { ...r, isFavorite: newFavorite } : r));
+      setRecipes(prev => prev.map(r => r.name.toLowerCase() === recipe.name.toLowerCase() ? { ...r, isFavorite: newFavorite } : r));
     } catch (err) {
       console.error('Failed to toggle favorite:', err);
     }

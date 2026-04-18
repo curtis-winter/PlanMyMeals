@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PantryItem } from '../types';
+import { capitalize } from '../utils/environment';
 
 export function usePantry() {
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
@@ -24,10 +25,9 @@ export function usePantry() {
 
   const savePantryItem = async (item: Partial<PantryItem>) => {
     try {
-      const capitalizedItem = { ...item };
-      if (capitalizedItem.name) {
-        capitalizedItem.name = capitalizedItem.name.trim().charAt(0).toUpperCase() + capitalizedItem.name.trim().slice(1);
-      }
+      const capitalizedItem = item.name 
+        ? { ...item, name: capitalize(item.name) }
+        : item;
       await fetch('/api/pantry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

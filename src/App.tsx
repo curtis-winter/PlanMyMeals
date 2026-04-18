@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { BookOpen, ShoppingCart } from 'lucide-react';
 import { DayOfWeek, Ingredient, Recipe } from './types';
 import { getOrderedDays, getDayFromOffset, getWeekEnd, isSameDay, isDateInRange, getDayIndexFromDate } from './utils/date';
+import { isLocalHost, capitalize } from './utils/environment';
 
 // Hooks
 import { usePantry } from './hooks/usePantry';
@@ -169,31 +170,30 @@ const { toasts, showToast, removeToast } = useToast();
   } = useModalState();
 
   const { buildNumber } = useBuildInfo();
-  const isLocalHost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
-  const findPantryItem = (name: string) => 
-    pantryItems.find(p => p.name.toLowerCase() === name.toLowerCase());
+  const isLocal = useMemo(() => isLocalHost(), []);
+  const findPantryItem = useCallback((name: string) => 
+    pantryItems.find(p => p.name.toLowerCase() === name.toLowerCase()), 
+  [pantryItems]);
 
-  const capitalize = (str: string) => 
-    str.trim().charAt(0).toUpperCase() + str.trim().slice(1);
-
-  const orderedDays = React.useMemo(() => 
+  const orderedDays = useMemo(() => 
     getOrderedDays(weekStartDay as DayOfWeek), 
   [weekStartDay]);
 
-  const getDayDate = (day: DayOfWeek) => {
+  const getDayDate = useCallback((day: DayOfWeek) => {
     const dayIndex = orderedDays.indexOf(day);
     return getDayFromOffset(currentWeekStart, dayIndex);
-  };
+  }, [currentWeekStart, orderedDays]);
 
-  const isToday = (day: DayOfWeek) => {
+  const isToday = useCallback((day: DayOfWeek) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const dayDate = getDayDate(day);
     return isSameDay(dayDate, today);
-  };
+  }, [getDayDate]);
 
   const [expandedDay, setExpandedDay] = useState<DayOfWeek | null>(null);
+  const [dragSource, setDragSource] = useState<{ day: DayOfWeek; index: number } | null>(null);
 
   React.useEffect(() => {
     const today = new Date();
@@ -221,9 +221,7 @@ const { toasts, showToast, removeToast } = useToast();
     }
   }, [expandedDay]);
 
-  const [dragSource, setDragSource] = useState<{ day: DayOfWeek; index: number } | null>(null);
-
-  const syncPantryFromIngredient = (name: string, isAvailable: boolean) => {
+  const syncPantryFromIngredient = useCallback((name: string, isAvailable: boolean) => {
     if (!name) return;
     if (isAvailable) {
       savePantryItem({ name });
@@ -233,9 +231,9 @@ const { toasts, showToast, removeToast } = useToast();
         removePantryItem(item.id);
       }
     }
-  };
+  }, [savePantryItem, removePantryItem, findPantryItem]);
 
-  const handleUpdateIngredient = (day: DayOfWeek, recipeIndex: number, id: string, updates: Partial<Ingredient>) => {
+  const handleUpdateIngredient = useCallback((day: DayOfWeek, recipeIndex: number, id: string, updates: Partial<Ingredient>) => {
     updateIngredient(day, recipeIndex, id, updates);
     
     if (updates.isAvailable !== undefined) {
@@ -245,9 +243,9 @@ const { toasts, showToast, removeToast } = useToast();
         syncPantryFromIngredient(ingredient.name, updates.isAvailable);
       }
     }
-  };
+  }, [updateIngredient, plan, syncPantryFromIngredient]);
 
-  const handleSaveRecipeFromEditor = (recipe: Partial<Recipe>) => {
+  const handleSaveRecipeFromEditor = useCallback((recipe: Partial<Recipe>) => {
     saveToRecipeBook(recipe as Recipe);
     
     recipe.ingredients?.forEach(ing => {
@@ -255,23 +253,23 @@ const { toasts, showToast, removeToast } = useToast();
         savePantryItem({ name: ing.name });
       }
     });
-  };
+  }, [saveToRecipeBook, savePantryItem]);
 
-  const handleCookRecipe = (recipe: Recipe) => {
+  const handleCookRecipe = useCallback((recipe: Recipe) => {
     setCookingRecipe(recipe);
     setShowRecipeEditor(false);
     setShowRecipeBook(false);
     setShowCookModal(true);
-  };
+  }, [setCookingRecipe, setShowRecipeEditor, setShowRecipeBook, setShowCookModal]);
 
-  const handleUseIngredient = (name: string) => {
+  const handleUseIngredient = useCallback((name: string) => {
     const item = findPantryItem(name);
     if (item) {
       removePantryItem(item.id);
     }
-  };
+  }, [findPantryItem, removePantryItem]);
 
-  const handleDrop = (targetDay: DayOfWeek, targetIndex: number) => {
+  const handleDrop = useCallback((targetDay: DayOfWeek, targetIndex: number) => {
     if (!dragSource) return;
     
     if (dragSource.day === targetDay) {
@@ -298,9 +296,9 @@ const { toasts, showToast, removeToast } = useToast();
       saveDayPlan(targetDay, { recipes: newTargetRecipes, instructions: plan[targetDay].instructions || [] });
     }
     setDragSource(null);
-  };
+  }, [dragSource, plan, setPlan, saveDayPlan]);
 
-  const handleIngredientKeyDown = (e: React.KeyboardEvent, day: DayOfWeek, recipeIndex: number, id: string, type: 'amount' | 'name') => {
+  const handleIngredientKeyDown = useCallback((e: React.KeyboardEvent, day: DayOfWeek, recipeIndex: number, id: string, type: 'amount' | 'name') => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (type === 'amount') {
@@ -320,12 +318,12 @@ const { toasts, showToast, removeToast } = useToast();
         }, 50);
       }
     }
-  };
+  }, [addIngredient]);
 
   return (
     <div className="min-h-screen bg-background-theme text-text-theme font-sans pb-20 transition-colors overflow-x-hidden flex flex-col">
       <Header 
-        isLocalHost={isLocalHost}
+        isLocalHost={isLocal}
         buildNumber={buildNumber}
         weekStartDay={weekStartDay as DayOfWeek}
         currentWeekStart={currentWeekStart}
@@ -407,6 +405,7 @@ const { toasts, showToast, removeToast } = useToast();
         onClose={() => setShowShoppingList(false)} 
         shoppingList={fullShoppingList}
         customItems={customItems}
+        isLocalHost={isLocal}
         onMarkAsAvailable={(name) => savePantryItem({ name })}
         onAddItem={(name) => savePantryItem({ name: capitalize(name) })}
         onRemoveCustomItem={removeCustomItem}
@@ -435,6 +434,7 @@ const { toasts, showToast, removeToast } = useToast();
         onCook={handleCookRecipe}
         orderedDays={orderedDays}
         allTags={allTags}
+        isLocalHost={isLocal}
       />
 
       <RecipeEditorModal
@@ -499,6 +499,7 @@ const { toasts, showToast, removeToast } = useToast();
         setTimeoutPantry={setTimeoutPantry}
         weekStartDay={weekStartDay}
         setWeekStartDay={setWeekStartDay}
+        isLocalHost={isLocal}
       />
 
       <ImportRecipeModal
@@ -532,6 +533,7 @@ const { toasts, showToast, removeToast } = useToast();
         pantryItems={pantryItems}
         savePantryItem={savePantryItem}
         removePantryItem={removePantryItem}
+        isLocalHost={isLocal}
       />
 
       <SuggestedRecipeModal

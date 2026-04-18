@@ -11,6 +11,7 @@ interface PantryManagerModalProps {
   pantryItems: PantryItem[];
   savePantryItem: (item: Partial<PantryItem>) => Promise<void>;
   removePantryItem: (id: number) => Promise<void>;
+  isLocalHost?: boolean;
 }
 
 export const PantryManagerModal: React.FC<PantryManagerModalProps> = ({
@@ -18,7 +19,8 @@ export const PantryManagerModal: React.FC<PantryManagerModalProps> = ({
   onClose,
   pantryItems,
   savePantryItem,
-  removePantryItem
+  removePantryItem,
+  isLocalHost
 }) => {
   const [search, setSearch] = useState('');
   const [newItemName, setNewItemName] = useState('');
@@ -125,12 +127,13 @@ export const PantryManagerModal: React.FC<PantryManagerModalProps> = ({
       onClose={onClose}
       title="Pantry Inventory"
       maxWidth="max-w-md"
+      isLocalHost={isLocalHost}
       icon={<Package className="text-background-theme w-5 h-5" />}
       headerActions={
         <div className="flex items-center gap-2">
           <a
             href="/pantry"
-            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${isLocalHost ? 'text-white hover:bg-white/10' : 'text-primary hover:bg-primary/10'}`}
             title="Open Mobile View"
           >
             <Smartphone className="w-5 h-5" />
@@ -139,7 +142,7 @@ export const PantryManagerModal: React.FC<PantryManagerModalProps> = ({
             <button
               onClick={handleOptimizeCategories}
               disabled={isOptimizing}
-              className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+              className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${isLocalHost ? 'text-white hover:bg-white/10' : 'text-primary hover:bg-primary/10'}`}
               title="Optimize Categories with AI"
             >
               {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Trash2, Search, ArrowLeft, Sparkles, Loader2, ShoppingCart } from 'lucide-react';
-import { PantryItem } from '../types';
+import { Package, Search, CheckCircle2, Trash2, Sparkles, Loader2, ArrowLeft, ShoppingCart, Plus, X } from 'lucide-react';
 import { getSection, GROCERY_SECTIONS } from '../utils/grocerySections';
+import { PantryItem } from '../types';
 import { Autocomplete } from '../components/ui/Autocomplete';
+import { isLocalHost } from '../utils/environment';
 
 export default function MobilePantry() {
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
@@ -129,31 +130,31 @@ export default function MobilePantry() {
 
   return (
     <div className="min-h-screen bg-background-theme pb-24">
-        <header className="bg-surface border-b border-border-theme sticky top-0 z-20">
+<header className={`border-b sticky top-0 z-20 ${isLocalHost() ? 'bg-red-600 border-red-800' : 'bg-surface border-border-theme'}`}>
           <div className="flex items-center justify-between p-4 w-full">
             <div className="flex items-center gap-2">
-              <button onClick={() => window.location.href = '/'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Main">
-                <ArrowLeft className="w-5 h-5 text-primary" />
+              <button onClick={() => window.location.href = '/'} className={`p-2 rounded-lg ${isLocalHost() ? 'hover:bg-white/10' : 'hover:bg-primary/10'}`} title="Go to Main">
+                <ArrowLeft className={`w-5 h-5 ${isLocalHost() ? 'text-white' : 'text-primary'}`} />
               </button>
-              <div className="bg-primary p-2 rounded-xl">
-                <Package className="text-background-theme w-5 h-5" />
+              <div className={`p-2 rounded-xl ${isLocalHost() ? 'bg-white' : 'bg-primary'}`}>
+                <Package className={`w-5 h-5 ${isLocalHost() ? 'text-red-600' : 'text-background-theme'}`} />
               </div>
-              <h1 className="text-xl font-bold text-primary">Pantry</h1>
+              <h1 className={`text-xl font-bold ${isLocalHost() ? 'text-white' : 'text-primary'}`}>Pantry</h1>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => window.location.href = '/mobile'} className="p-2 hover:bg-primary/10 rounded-lg" title="Go to Shopping List">
-                <ShoppingCart className="w-5 h-5 text-primary" />
+              <button onClick={() => window.location.href = '/shoppinglist'} className={`p-2 rounded-lg ${isLocalHost() ? 'hover:bg-white/10' : 'hover:bg-primary/10'}`} title="Go to Shopping List">
+                <ShoppingCart className={`w-5 h-5 ${isLocalHost() ? 'text-white' : 'text-primary'}`} />
               </button>
               <button
                 onClick={handleOptimizeCategories}
                 disabled={isOptimizing || pantryItems.length === 0}
-                className="p-2 text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
+                className={`p-2 rounded-lg disabled:opacity-50 ${isLocalHost() ? 'text-white hover:bg-white/10' : 'text-primary hover:bg-primary/10'}`}
               >
                 {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
               </button>
             </div>
           </div>
-      </header>
+        </header>
 
       <div className="p-4 bg-surface border-b border-border-theme">
         <div className="relative">

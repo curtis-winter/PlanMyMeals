@@ -6,9 +6,16 @@ export interface Toast {
   type: 'success' | 'error' | 'info';
 }
 
-let globalToasts: Toast[] = [];
-let listeners: ((toasts: Toast[]) => void)[] = [];
-const activeTimeouts: Map<string, NodeJS.Timeout> = new Map();
+export let globalToasts: Toast[] = [];
+export let listeners: ((toasts: Toast[]) => void)[] = [];
+export const activeTimeouts: Map<string, NodeJS.Timeout> = new Map();
+
+export function resetToastState() {
+  globalToasts = [];
+  listeners = [];
+  activeTimeouts.forEach(t => clearTimeout(t));
+  activeTimeouts.clear();
+}
 
 function notifyListeners() {
   listeners.forEach(listener => listener([...globalToasts]));
