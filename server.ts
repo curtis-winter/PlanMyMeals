@@ -170,12 +170,18 @@ db.exec(`
     category TEXT
   );
 
-  CREATE TABLE IF NOT EXISTS ollama_servers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    url TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+CREATE TABLE IF NOT EXISTS ollama_servers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_pantry_name ON pantry(name);
+CREATE INDEX IF NOT EXISTS idx_pantry_category ON pantry(category);
+CREATE INDEX IF NOT EXISTS idx_shopping_history_name ON shopping_history(name);
+CREATE INDEX IF NOT EXISTS idx_shopping_history_category ON shopping_history(category);
+CREATE INDEX IF NOT EXISTS idx_meal_plans_week_start ON meal_plans(week_start);
 `);
 
 // Get current version
@@ -216,23 +222,6 @@ const migrations = [
         db.exec("ALTER TABLE recipes ADD COLUMN is_favorite INTEGER DEFAULT 0;");
       } catch {
         // Column may already exist
-      }
-    }
-  },
-  {
-    version: 2,
-    up: () => {
-      db.prepare("INSERT OR IGNORE INTO shopping_history (name, category) SELECT name, category FROM pantry").run();
-    }
-  },
-  {
-    version: 3,
-    up: () => {
-      // Ensure instructions column exists (for DBs created before v3)
-      try {
-        db.exec("ALTER TABLE meal_plans ADD COLUMN instructions TEXT;");
-      } catch (e) {
-        // Column already exists
       }
     }
   }

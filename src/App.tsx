@@ -18,6 +18,7 @@ import { useAI } from './hooks/useAI';
 import { useBuildInfo } from './hooks/useBuildInfo';
 import { useModalState } from './hooks/useModalState';
 import { useShoppingList } from './hooks/useShoppingList';
+import { useToast } from './hooks/useToast';
 
 // Components
 import { ShoppingListModal } from './components/ShoppingListModal';
@@ -32,6 +33,7 @@ import { CookRecipeModal } from './components/CookRecipeModal';
 import { DayCard } from './components/DayCard';
 import { Header } from './components/Header';
 import { WeekControls } from './components/WeekControls';
+import { ToastContainer } from './components/ui/Toast';
 
 export default function App() {
   const {
@@ -101,9 +103,10 @@ export default function App() {
     saveDayPlan
   } = useMealPlan(pantryItems, weekStartDay as DayOfWeek);
 
-  const { shoppingList: fullShoppingList, customItems, removeCustomItem } = useShoppingList(plan, pantryItems);
+const { shoppingList: fullShoppingList, customItems, removeCustomItem } = useShoppingList(plan, pantryItems);
+const { toasts, showToast, removeToast } = useToast();
 
-  // Combine recipe items + custom items for badge count
+// Combine recipe items + custom items for badge count
   const shoppingListCount = fullShoppingList.length + customItems.length;
 
   const {
@@ -144,7 +147,7 @@ export default function App() {
     confirmAIGeneration,
     importRecipe,
     cleanupRecipe
-  } = useAI(plan, setPlan, saveDayPlan, pantryItems);
+  } = useAI(plan, setPlan, saveDayPlan, pantryItems, (msg) => showToast(msg, 'error'));
 
   const {
     showShoppingList,
@@ -208,6 +211,15 @@ export default function App() {
       }
     }
   }, [orderedDays, currentWeekStart, weekStartDay]);
+
+  React.useEffect(() => {
+    if (expandedDay) {
+      setTimeout(() => {
+        const card = document.querySelector(`[data-day-card="${expandedDay}"]`);
+        card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [expandedDay]);
 
   const [dragSource, setDragSource] = useState<{ day: DayOfWeek; index: number } | null>(null);
 
@@ -330,7 +342,7 @@ export default function App() {
         onNavigateWeek={navigateWeek}
       />
 
-      <main className="max-w-4xl mx-auto px-4 pb-20">
+      <main className="max-w-4xl mx-auto px-2 md:px-4 pb-20 flex flex-col flex-1">
         <WeekControls 
           currentWeekStart={currentWeekStart}
           weekStartDay={weekStartDay as DayOfWeek}
@@ -343,11 +355,12 @@ export default function App() {
           isSuggestingRecipe={isSuggestingRecipe}
         />
 
-        <div className="space-y-4 pt-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
-          {orderedDays.map((day) => (
-            <DayCard
-              key={day}
-              day={day}
+        <div className="space-y-4 pt-20 overflow-y-auto flex-1">
+{orderedDays.map((day) => (
+<DayCard
+  key={day}
+  data-day-card={day}
+  day={day}
               isToday={isToday(day)}
               date={getDayDate(day)}
               recipes={plan[day].recipes}
@@ -563,8 +576,10 @@ export default function App() {
               {shoppingListCount}
             </span>
           )}
-        </button>
-      </div>
-    </div>
-  );
+</button>
+</div>
+
+<ToastContainer toasts={toasts} onRemove={removeToast} />
+</div>
+);
 }

@@ -7,7 +7,8 @@ export function useAI(
   plan: WeeklyPlan,
   setPlan: React.Dispatch<React.SetStateAction<WeeklyPlan>>,
   saveDayPlan: (day: DayOfWeek, meal: Meal) => Promise<void>,
-  pantryItems: PantryItem[]
+  pantryItems: PantryItem[],
+  onError?: (message: string) => void
 ) {
   const { ollamaSettings } = useSettings();
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
@@ -50,12 +51,14 @@ export function useAI(
         directions: data.directions || [],
         rating: recipe.rating || 0
       };
-    } catch (err) {
-      console.error('Recipe cleanup failed:', err);
-      const message = err.message || 'Unknown error';
-      alert(`Recipe cleanup failed: ${message}. Make sure Ollama is running and the model is pulled.`);
-      return null;
-    } finally {
+} catch (err) {
+    console.error('Recipe cleanup failed:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    const fullMessage = `Recipe cleanup failed: ${message}. Make sure Ollama is running and the model is pulled.`;
+    if (onError) onError(fullMessage);
+    else console.error(fullMessage);
+    return null;
+  } finally {
       setIsCleaningUp(false);
     }
   };
@@ -89,10 +92,12 @@ export function useAI(
       })));
       setShowImportModal(false);
       setShowSuggestedRecipeModal(true);
-    } catch (err) {
-      console.error('Import failed:', err);
-      alert('Import failed. Make sure Ollama is running and the model is pulled.');
-    } finally {
+} catch (err) {
+    console.error('Import failed:', err);
+    const message = 'Import failed. Make sure Ollama is running and the model is pulled.';
+    if (onError) onError(message);
+    else console.error(message);
+  } finally {
       setIsImporting(false);
     }
   };
@@ -195,11 +200,13 @@ export function useAI(
 
         setSuggestedRecipes(formattedRecipes);
         setShowSuggestedRecipeModal(true);
-      } catch (err) {
-        console.error('Recipe suggestion failed:', err);
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        alert(`Recipe suggestion failed: ${message}. Make sure Ollama is running and the model is pulled.`);
-      } finally {
+} catch (err) {
+  console.error('Recipe suggestion failed:', err);
+  const message = err instanceof Error ? err.message : 'Unknown error';
+  const fullMessage = `Recipe suggestion failed: ${message}. Make sure Ollama is running and the model is pulled.`;
+  if (onError) onError(fullMessage);
+  else console.error(fullMessage);
+} finally {
         setIsSuggestingRecipe(false);
       }
       return;
@@ -238,10 +245,12 @@ export function useAI(
       const newMeal = { ...plan[day], recipes: newRecipes };
       setPlan(prev => ({ ...prev, [day]: newMeal }));
       saveDayPlan(day, newMeal);
-    } catch (err) {
-      console.error('AI generation failed:', err);
-      alert('AI generation failed. Make sure Ollama is running and the model is pulled.');
-    } finally {
+} catch (err) {
+  console.error('AI generation failed:', err);
+  const message = 'AI generation failed. Make sure Ollama is running and the model is pulled.';
+  if (onError) onError(message);
+  else console.error(message);
+} finally {
       setIsGenerating(prev => ({ ...prev, [`${day}-${recipeIndex}`]: false }));
       setActiveDayForAI(null);
       setActiveRecipeIndex(null);
